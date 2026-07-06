@@ -1132,7 +1132,7 @@ with tab5:
         | **Embedder** | OpenAI `text-embedding-3-small` (1536-d), 코사인 유사도 top-3 검색 |
         | **Simulator Tool** | LightGBM 깡통전세 분류기 (AUC 0.989) + SHAP 설명 |
         | **Dong Lookup Tool** | 65개 동 8축 안전점수 · 전세가율 추세 조회 |
-        | **News Tool** | 네이버 뉴스 검색 API(공식) · 실패 시 Google News RSS 폴백 |
+        | **News Tool** | Google News RSS 검색 (키 불필요, 한국어 매체 우선) |
         | **LLM** | OpenAI gpt-5-mini — 검색·툴·뉴스 결과를 근거로 답변 생성 |
         | **Fallback** | 임베딩/LLM 실패 시 rule-based 합성으로 무중단 동작 |
         """)

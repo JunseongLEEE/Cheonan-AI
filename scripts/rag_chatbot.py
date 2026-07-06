@@ -28,7 +28,7 @@ Architecture
   │ 3. Tool Execution                        │
   │    - LightGBM predict() + SHAP           │
   │    - 동별 안전점수/추세 조회               │
-  │    - 뉴스 검색(Naver News API/Google RSS)│
+  │    - 뉴스 검색(Google News RSS, 키 불필요)│
   └─────────────────────────────────────────┘
         │
         ▼
@@ -74,7 +74,7 @@ def _load_from_streamlit_secrets():
         # st.secrets 접근은 앱 컨텍스트가 있을 때만 유효
         if not hasattr(st, "secrets"):
             return
-        for _key in ("OPENAI_API_KEY", "NAVER_CLIENT_ID", "NAVER_CLIENT_SECRET"):
+        for _key in ("OPENAI_API_KEY",):
             try:
                 if _key in st.secrets and not os.environ.get(_key):
                     os.environ[_key] = st.secrets[_key]
@@ -406,54 +406,19 @@ def tool_dong_lookup(dong: str, df_safety: pd.DataFrame, df_trends: pd.DataFrame
 
 
 # ═════════════════════════════════════════════
-# 3-1. News Tool (Naver News API + Google News RSS fallback)
+# 3-1. News Tool (Google News RSS — 키 불필요)
 # ═════════════════════════════════════════════
 
-def _has_naver_keys() -> bool:
-    _load_from_streamlit_secrets()
-    return bool(os.getenv("NAVER_CLIENT_ID") and os.getenv("NAVER_CLIENT_SECRET"))
-
-
 def _strip_html(text: str) -> str:
-    """HTML 태그 제거 (Naver 응답에 <b> 태그 등 포함)."""
+    """HTML 태그 제거."""
     return re.sub(r"<[^>]+>", "", text or "").replace("&quot;", '"').replace("&amp;", "&")
 
 
-def _search_naver_news(query: str, k: int = 5) -> list[dict]:
-    """네이버 뉴스 검색 API — 공식·합법."""
-    import urllib.request
-    import urllib.parse
-    import json as _json
-
-    try:
-        params = urllib.parse.urlencode({"query": query, "display": k, "sort": "date"})
-        url = f"https://openapi.naver.com/v1/search/news.json?{params}"
-        req = urllib.request.Request(url, headers={
-            "X-Naver-Client-Id": os.getenv("NAVER_CLIENT_ID", ""),
-            "X-Naver-Client-Secret": os.getenv("NAVER_CLIENT_SECRET", ""),
-        })
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            data = _json.loads(resp.read().decode("utf-8"))
-        items = []
-        for it in data.get("items", []):
-            items.append({
-                "title": _strip_html(it.get("title", "")),
-                "description": _strip_html(it.get("description", "")),
-                "link": it.get("originallink") or it.get("link", ""),
-                "pubDate": it.get("pubDate", ""),
-                "source": "네이버 뉴스",
-            })
-        return items
-    except Exception:
-        return []
-
-
-def _search_google_news_rss(query: str, k: int = 5) -> list[dict]:
-    """Google News RSS — 키 불필요 fallback."""
+def tool_news_search(query: str, k: int = 4) -> list[dict]:
+    """Google News RSS 검색 — API 키 없이 동작."""
     import urllib.request
     import urllib.parse
     import xml.etree.ElementTree as ET
-    from email.utils import parsedate_to_datetime
 
     try:
         q = urllib.parse.quote(query)
@@ -480,15 +445,6 @@ def _search_google_news_rss(query: str, k: int = 5) -> list[dict]:
         return items
     except Exception:
         return []
-
-
-def tool_news_search(query: str, k: int = 4) -> list[dict]:
-    """뉴스 검색 툴 — 네이버 우선, 실패 시 Google News RSS."""
-    if _has_naver_keys():
-        results = _search_naver_news(query, k=k)
-        if results:
-            return results
-    return _search_google_news_rss(query, k=k)
 
 
 def _detect_news_intent(query: str) -> bool:
