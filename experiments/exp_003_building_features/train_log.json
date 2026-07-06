@@ -1,0 +1,116 @@
+{
+  "experiment_id": "exp_003_building_features",
+  "model_type": "gangton_classifier",
+  "hypothesis": "동별 건축물대장 집계 피처(노후비율, 내진비율, 구조분포, 세대수) 추가 → 건물 인프라 수준이 깡통전세 위험도와 상관있는지 검증",
+  "base_experiment": "exp_002_no_trade_price",
+  "added_features": [
+    "동_평균건물연령",
+    "동_건물연령_std",
+    "동_노후비율",
+    "동_심각노후비율",
+    "동_내진비율",
+    "동_건물수",
+    "동_평균세대수",
+    "동_평균총면적",
+    "동_평균지상층",
+    "동_철근콘크리트비율",
+    "동_벽돌비율",
+    "동_목구조비율",
+    "건물연령_동평균차",
+    "보증금_노후도_교차"
+  ],
+  "cv_score": 0.9930865650104483,
+  "cv_std": 0.0006759291241973808,
+  "metric": "AUC",
+  "f1_score": 0.9646167025778147,
+  "n_folds": 5,
+  "n_samples": 33638,
+  "n_positive": 19310,
+  "n_negative": 14328,
+  "seed": 42,
+  "shap_generated": true,
+  "feature_importance": [
+    {
+      "feature": "연도별_동_위험도",
+      "importance": 110807.57411068678
+    },
+    {
+      "feature": "건물연령",
+      "importance": 58133.55022764206
+    },
+    {
+      "feature": "건물연령_동평균차",
+      "importance": 27421.348678171635
+    },
+    {
+      "feature": "㎡당_보증금",
+      "importance": 17557.00685888529
+    },
+    {
+      "feature": "거래연도",
+      "importance": 14884.331448853016
+    },
+    {
+      "feature": "동_거래건수",
+      "importance": 13091.894181013107
+    },
+    {
+      "feature": "보증금_구평균_비율",
+      "importance": 12650.726580262184
+    },
+    {
+      "feature": "전용면적",
+      "importance": 12447.004592359066
+    },
+    {
+      "feature": "보증금_동평균_비율",
+      "importance": 10871.808450698853
+    },
+    {
+      "feature": "동_평균보증금",
+      "importance": 8861.314968824387
+    }
+  ],
+  "shap_importance": [
+    {
+      "feature": "연도별_동_위험도",
+      "mean_abs_shap": 1.9029133542905854
+    },
+    {
+      "feature": "거래연도",
+      "mean_abs_shap": 1.3632335336395058
+    },
+    {
+      "feature": "건물연령",
+      "mean_abs_shap": 1.3391186512897695
+    },
+    {
+      "feature": "㎡당_보증금",
+      "mean_abs_shap": 1.2099682454900096
+    },
+    {
+      "feature": "보증금_동평균_비율",
+      "mean_abs_shap": 0.6233052126670301
+    },
+    {
+      "feature": "건물연령_동평균차",
+      "mean_abs_shap": 0.49553066081499664
+    },
+    {
+      "feature": "면적_구평균_비율",
+      "mean_abs_shap": 0.37006611684785956
+    },
+    {
+      "feature": "보증금_구평균_비율",
+      "mean_abs_shap": 0.3165038156424192
+    },
+    {
+      "feature": "전용면적",
+      "mean_abs_shap": 0.25924710024946307
+    },
+    {
+      "feature": "보증금_만원",
+      "mean_abs_shap": 0.2516925424942444
+    }
+  ]
+}

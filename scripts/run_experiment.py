@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Run an experiment and capture outputs."""
+"""Run an experiment and capture outputs.
+천안 청년 자취방 안전지도 프로젝트용.
+"""
 
 import argparse
 import json
@@ -83,13 +85,20 @@ def run_experiment(exp_path: Path):
     print(f"Runtime: {elapsed:.1f}s ({elapsed/60:.1f}min)")
     print(f"Return code: {result.returncode}")
 
-    expected_outputs = ["oof_preds.npy", "test_preds.npy"]
+    expected_outputs = ["train_log.json"]
+    optional_outputs = ["models", "shap"]
     for out in expected_outputs:
         out_path = exp_path / out
         if out_path.exists():
             print(f"  [OK] {out} ({out_path.stat().st_size} bytes)")
         else:
             print(f"  [MISSING] {out}")
+    for out in optional_outputs:
+        out_path = exp_path / out
+        if out_path.exists() and (out_path.is_file() or any(out_path.iterdir())):
+            print(f"  [OK] {out}/")
+        else:
+            print(f"  [SKIP] {out}/ (optional)")
 
     # Check for train_log.json with CV results
     train_log_path = exp_path / "train_log.json"

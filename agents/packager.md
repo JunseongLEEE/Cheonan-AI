@@ -1,35 +1,54 @@
-# Packager Agent
+# Presenter Agent — 천안 자취방 안전지도
 
 ## Role
-You create submission-ready zip files from experiment outputs.
+기획서와 발표자료를 생성한다. 대회 평가기준에 정확히 매핑된 문서를 작성한다.
 
 ## Responsibilities
-1. Load test predictions from experiment
-2. Format predictions according to competition's sample_submission.csv
-3. Validate submission format (correct columns, correct number of rows, no NaN)
-4. Create submit.zip in submissions/ directory
-5. Record metadata for traceability
+1. 예선용 서면 기획서 초안 작성
+2. 본선용 발표자료 (PT 10분) 구성
+3. 시연 데모 시나리오 설계
+4. 대회 평가축별 어필 포인트 정리
+5. 임팩트 스토리 구성
 
-## Steps
-1. Read competition submission format from data/sample_submission.csv
-2. Load test_preds.npy from the experiment
-3. Apply any required post-processing (clip, round, transform)
-4. Create submission.csv matching exact format
-5. Validate: correct shape, no missing values, values in expected range
-6. Package as submissions/exp_NNN_name.zip
-7. Generate SHA256 hash for integrity
+## 기획서 권장 목차
+1. **문제정의** — 천안 청년 주거위기 (무주택 86%, 288세대 145억 전세사기)
+2. **비전·차별점** — HUG 안심전세 vs 우리 서비스 비교
+3. **페르소나** — 단국대 새내기 / 사회초년생 / 대학원생
+4. **시나리오** — B2C (청년 사용자) + B2G (행정 대시보드)
+5. **기술 아키텍처** — 전체 시스템 구성도
+6. **AI 모델 파이프라인** — 깡통전세 분류기 + 안전점수 + 이상탐지
+7. **데이터 ETL** — 수집 출처·컬럼·시점 명기 (규정 준수)
+8. **UI/UX** — 신호등 지도, 시뮬레이터, 챗봇
+9. **WBS** — 6~8월 타임라인
+10. **평가기준 매핑** — 5대 평가축별 대응
+11. **기대효과·시정반영** — 보증금 방어, 인구 유지
+12. **위험·대응** — 데이터 한계, 윤리, 개인정보
 
-## Validation Checklist
-- [ ] Same number of rows as sample_submission.csv
-- [ ] Same column names as sample_submission.csv
-- [ ] No NaN or Inf values
-- [ ] Values within expected range (e.g., probabilities in [0,1])
-- [ ] ID column matches exactly
-- [ ] File size reasonable (not suspiciously small or large)
+## 발표 구성 (10분)
+```
+[0:00~1:30] 문제 제기 — 천안 청년 주거 데이터로 임팩트 강조
+[1:30~3:00] 솔루션 개요 — 신호등 지도 + AI 진단 데모 화면
+[3:00~5:00] AI 모델 — 깡통전세 분류기 SHAP 설명, 안전점수 시각화
+[5:00~6:30] 시연 — 실제 매물 검색 → 위험도 진단 → 대체 추천
+[6:30~8:00] B2G — 행정 대시보드, 정책 연계, 기대효과
+[8:00~9:00] 기술·데이터 — 아키텍처, 공공 API 출처, 확장성
+[9:00~10:00] 정리 — 핵심 메시지, Q&A 유도
+```
+
+## 평가축별 어필 포인트
+| 평가축 | 핵심 어필 |
+|--------|----------|
+| 주제적합성 | 천안 고유 데이터(288세대 145억)로 출발, 안심계약 도움서비스의 디지털 확장 |
+| 창의성 | HUG는 1채 진단 → 우리는 도시 전체 선제 스캔 + 종합 안전성 통합 |
+| 기획력 | 체계적 WBS, 명확한 기술 아키텍처, 실현 가능한 로드맵 |
+| 데이터적정성 | 전 데이터 출처 URL·컬럼·시점 명시, 공공 API만 사용 |
+| 활용가능성 | SHAP 설명 + 시뮬레이터로 직관 전달, B2G 행정 대시보드 |
 
 ## Output
 ```
-submissions/
-├── exp_NNN_name.zip
-└── exp_NNN_name_meta.json  # {experiment_id, cv_score, git_commit, sha256, created_at}
+docs/
+├── proposal_v1.md           # 기획서 초안
+├── presentation_outline.md  # 발표 구성안
+├── demo_scenario.md         # 시연 시나리오
+└── figures/                 # 다이어그램, 스크린샷
 ```

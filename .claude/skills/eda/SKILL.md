@@ -1,5 +1,5 @@
 ---
-description: "Quick EDA on competition data — analyzes shape, distributions, missing values, class balance, and key patterns. Run at competition start or when new data arrives."
+description: "Quick EDA on collected data — analyzes shape, distributions, missing values, data quality, and key patterns for 천안 자취방 안전지도."
 user-invocable: true
 allowed-tools:
   - Bash
@@ -8,108 +8,109 @@ allowed-tools:
   - Glob
 ---
 
-# /eda — Exploratory Data Analysis
+# /eda — Exploratory Data Analysis (천안 자취방 안전지도)
 
-Fast, structured EDA for competition data. Designed to extract actionable insights quickly.
+수집된 공공 데이터에 대한 구조화된 EDA. 실행 가능한 인사이트를 빠르게 추출한다.
 
 ## Arguments
-- `$ARGUMENTS` — optional: specific focus area (e.g., "target distribution", "text lengths", "missing values")
+- `$ARGUMENTS` — optional: 특정 데이터셋 (e.g., "realestate", "building", "cctv", "all")
 
 ## Step 1: Data Overview
 
 ```python
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
-train = pd.read_csv('data/train.csv')
-test = pd.read_csv('data/test.csv')
+data_dir = Path('data/raw')
+processed_dir = Path('data/processed')
 
-print("=== SHAPES ===")
-print(f"Train: {train.shape}, Test: {test.shape}")
-
-print("\n=== COLUMNS ===")
-print(f"Train: {list(train.columns)}")
-print(f"Test: {list(test.columns)}")
-print(f"Train-only: {set(train.columns) - set(test.columns)}")  # likely includes target
-
-print("\n=== DTYPES ===")
-print(train.dtypes)
-
-print("\n=== MISSING VALUES ===")
-print(train.isnull().sum())
-print(test.isnull().sum())
-
-print("\n=== TARGET DISTRIBUTION ===")
-target_col = (set(train.columns) - set(test.columns)).pop()  # guess target
-print(train[target_col].value_counts(normalize=True))
+# 수집된 데이터 목록
+print("=== 수집 데이터 현황 ===")
+for category in sorted(data_dir.iterdir()):
+    if category.is_dir():
+        files = list(category.rglob('*'))
+        total_size = sum(f.stat().st_size for f in files if f.is_file())
+        print(f"{category.name}: {len(files)} files, {total_size/1024/1024:.1f} MB")
 ```
 
-## Step 2: Feature Analysis
+## Step 2: 실거래가 분석 (깡통전세 핵심)
 
 ```python
-print("\n=== NUMERIC FEATURES ===")
-print(train.describe())
-
-print("\n=== CATEGORICAL FEATURES ===")
-for col in train.select_dtypes(include='object').columns:
-    print(f"\n{col}: {train[col].nunique()} unique values")
-    print(train[col].value_counts().head(5))
-
-print("\n=== TEXT FEATURES ===")
-for col in train.select_dtypes(include='object').columns:
-    lengths = train[col].str.len()
-    print(f"\n{col} length: mean={lengths.mean():.0f}, median={lengths.median():.0f}, max={lengths.max()}")
+# 매매가 vs 전세가 매칭 가능성
+# 전세가율 분포
+# 동남구 vs 서북구 비교
+# 단독/다가구 지번 매칭률
+# 시계열 추세 (연도별 전세가율 변화)
 ```
 
-## Step 3: Train-Test Consistency
+핵심 지표:
+- 전세가율 > 80% 비율
+- 전세가율 > 90% 비율
+- 동남구 vs 서북구 전세가율 평균
+- 매매-전세 매칭률 (특히 단독/다가구)
+
+## Step 3: 건축물대장 분석
 
 ```python
-# Check for distribution shift between train and test
-for col in test.columns:
-    if col in train.columns:
-        if train[col].dtype == 'object':
-            train_vals = set(train[col].dropna().unique())
-            test_vals = set(test[col].dropna().unique())
-            unseen = test_vals - train_vals
-            if unseen:
-                print(f"⚠️  {col}: {len(unseen)} unseen values in test!")
+# 건물연령 분포 (사용승인일 기준)
+# 구조별 분포 (철근콘크리트, 조적, 목조 등)
+# 층수 분포
+# 세대수 분포
+# 반지하(지하층) 비율
 ```
 
-## Step 4: Competition-Specific Analysis
+## Step 4: 안전 데이터 분석
 
-Based on competition theme (AI Agent Action Decision):
-- Check for action/label columns and their distribution
-- Look for temporal patterns (timestamps, sequences)
-- Check if data has group structure (sessions, users, agents)
-- Measure text/feature complexity for model size estimation
-- Estimate inference time budget
+```python
+# CCTV 밀도 (동별)
+# 편의시설 밀도 (편의점/마트/세탁소)
+# 병원/약국 접근성
+# 대기질 (PM10/PM2.5 평균)
+# 침수 이력
+```
 
-## Step 5: Report
+## Step 5: 공간 분석
+
+```python
+# H3 헥사곤 격자별 데이터 밀도
+# 대학가(안서동) vs 신도심(불당·백석) 비교
+# 동별 청년 밀집도 (SGIS 데이터)
+```
+
+## Step 6: Report
 
 Write findings to `logs/eda_report.md`:
 
 ```markdown
 # EDA Report — YYYY-MM-DD
 
-## Data Summary
-- Train: NNN rows × MMM cols
-- Test: NNN rows × MMM cols
-- Target: [col_name], [distribution]
+## 데이터 수집 현황
+| 카테고리 | 파일 수 | 용량 | 기간 | 품질 |
+|----------|---------|------|------|------|
+| 실거래가 | N | XX MB | 2006~현재 | ✓/△/✗ |
+| 건축물대장 | N | XX MB | - | ✓/△/✗ |
+| ... | | | | |
 
-## Key Findings
-1. [most impactful finding]
-2. [second finding]
-3. [third finding]
+## 핵심 발견
+1. [가장 중요한 발견]
+2. [두 번째 발견]
+3. [세 번째 발견]
 
-## Recommended Approach
-- Model type: [suggestion]
-- Key features: [list]
-- CV strategy: [stratified/group/time]
-- Watch out for: [pitfalls]
+## 깡통전세 관련
+- 전세가율 > 80% 비율: XX%
+- 동남구 vs 서북구 차이: ...
+- 매칭률 한계: ...
+
+## 모델링 권장
+- 추천 모델: [...]
+- 핵심 피처: [...]
+- CV 전략: [...]
+- 주의사항: [...]
 
 ## Action Items
-- [ ] [first thing to try]
-- [ ] [second thing to try]
+- [ ] [첫 번째 액션]
+- [ ] [두 번째 액션]
 ```
 
 Then print: "EDA 완료. `/plan`으로 실험 계획을 세우세요."

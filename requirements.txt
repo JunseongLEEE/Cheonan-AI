@@ -1,0 +1,20 @@
+# === Streamlit + 지도 ===
+streamlit>=1.36
+streamlit-folium>=0.20
+folium>=0.16
+
+# === 데이터/시각화 ===
+pandas>=2.2
+numpy>=1.26
+pyarrow>=15.0
+plotly>=5.20
+
+# === 모델 (LightGBM + SHAP) ===
+lightgbm>=4.3
+shap>=0.45
+scikit-learn>=1.4
+scipy>=1.11
+
+# === RAG 챗봇 ===
+openai>=1.30
+python-dotenv>=1.0

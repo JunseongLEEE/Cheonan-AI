@@ -1,0 +1,34 @@
+{
+  "last_updated": null,
+  "data_sources": {
+    "realestate_apt_trade": {"status": "pending", "records": 0, "api": "15126469"},
+    "realestate_apt_rent": {"status": "pending", "records": 0, "api": "15126474"},
+    "realestate_offi_trade": {"status": "pending", "records": 0, "api": "15126464"},
+    "realestate_offi_rent": {"status": "pending", "records": 0, "api": "15126475"},
+    "realestate_rh_trade": {"status": "pending", "records": 0, "api": "15126467"},
+    "realestate_rh_rent": {"status": "pending", "records": 0, "api": "15126473"},
+    "realestate_sh_trade": {"status": "pending", "records": 0, "api": "15126465"},
+    "realestate_sh_rent": {"status": "pending", "records": 0, "api": "15126472"},
+    "building": {"status": "pending", "records": 0, "api": "15134735"},
+    "housing_price": {"status": "pending", "records": 0, "api": "15124003"},
+    "land_price": {"status": "pending", "records": 0, "api": "15124014"},
+    "flood": {"status": "pending", "records": 0, "api": "15101791"},
+    "cctv": {"status": "pending", "records": 0, "api": "15013094"},
+    "commerce": {"status": "pending", "records": 0, "api": "15012005"},
+    "medical": {"status": "pending", "records": 0, "api": "15001698"},
+    "air_quality": {"status": "pending", "records": 0, "api": "15073861"},
+    "air_station": {"status": "pending", "records": 0, "api": "15073877"},
+    "sgis_population": {"status": "pending", "records": 0},
+    "sgis_household": {"status": "pending", "records": 0},
+    "sgis_house": {"status": "pending", "records": 0},
+    "sgis_company": {"status": "pending", "records": 0},
+    "sgis_grid": {"status": "pending", "records": 0},
+    "sgis_boundary": {"status": "pending", "records": 0}
+  },
+  "manual_downloads": {
+    "taas_traffic": {"status": "pending", "note": "TAAS 교통사고 GIS"},
+    "binzip": {"status": "pending", "note": "빈집애 누리집"},
+    "city_plan_pdf": {"status": "pending", "note": "2035 천안도시기본계획"},
+    "youth_policy": {"status": "pending", "note": "천안시 청년정책 페이지"}
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "experiment_id": "exp_005_expanded_data",
+  "model_type": "gangton_classifier",
+  "hypothesis": "8개 부동산 유형으로 확장된 데이터셋(Rent 371K, Trade 270K, Jeonse 188K)으로 재학습하면 더 다양한 패턴을 학습하여 성능이 유지 또는 개선되는지 검증",
+  "base_experiment": "exp_004_threshold_80",
+  "changes": [
+    "expanded dataset: 8 property types included",
+    "Rent 371,612 / Trade 270,307 / Jeonse 188,184 rows",
+    "same features, thresholds, hyperparams as exp_004"
+  ],
+  "cv_score": 0.9893801912522425,
+  "cv_std": 0.0008759583923123751,
+  "metric": "AUC",
+  "f1_score": 0.9685302390998594,
+  "n_folds": 5,
+  "n_samples": 60412,
+  "n_positive": 46084,
+  "n_negative": 14328,
+  "seed": 42,
+  "shap_generated": true,
+  "feature_importance": [
+    {
+      "feature": "건물연령",
+      "importance": 181767.77182543278
+    },
+    {
+      "feature": "연도별_동_위험도",
+      "importance": 169247.73398053646
+    },
+    {
+      "feature": "㎡당_보증금",
+      "importance": 51220.92007791996
+    },
+    {
+      "feature": "건물연령_동평균차",
+      "importance": 49671.47449183464
+    },
+    {
+      "feature": "동_평균보증금",
+      "importance": 41652.00271308422
+    },
+    {
+      "feature": "거래연도",
+      "importance": 38622.00764524937
+    },
+    {
+      "feature": "전용면적",
+      "importance": 28337.482512950897
+    },
+    {
+      "feature": "보증금_동평균_비율",
+      "importance": 27182.285058617592
+    },
+    {
+      "feature": "보증금_만원",
+      "importance": 18380.11942434311
+    },
+    {
+      "feature": "면적_구평균_비율",
+      "importance": 18037.359527349472
+    }
+  ],
+  "shap_importance": [
+    {
+      "feature": "연도별_동_위험도",
+      "mean_abs_shap": 1.9782970845906467
+    },
+    {
+      "feature": "건물연령",
+      "mean_abs_shap": 1.4117787698634594
+    },
+    {
+      "feature": "㎡당_보증금",
+      "mean_abs_shap": 1.0018186007306902
+    },
+    {
+      "feature": "거래연도",
+      "mean_abs_shap": 0.7869792431262739
+    },
+    {
+      "feature": "건물연령_동평균차",
+      "mean_abs_shap": 0.44930932956260144
+    },
+    {
+      "feature": "면적_구평균_비율",
+      "mean_abs_shap": 0.4474065290202056
+    },
+    {
+      "feature": "보증금_동평균_비율",
+      "mean_abs_shap": 0.40297915086645936
+    },
+    {
+      "feature": "전용면적",
+      "mean_abs_shap": 0.39186646276978604
+    },
+    {
+      "feature": "보증금_만원",
+      "mean_abs_shap": 0.27856919216177095
+    },
+    {
+      "feature": "동_거래건수",
+      "mean_abs_shap": 0.26673030952498633
+    }
+  ]
+}

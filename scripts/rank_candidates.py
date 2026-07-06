@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Rank submission candidates and update SUBMISSION_CANDIDATES.md."""
+"""Rank components for final service and presentation.
+천안 청년 자취방 안전지도 프로젝트 — 대회 평가축 기반 순위.
+"""
 
-import argparse
-import csv
 import json
 import sys
 from datetime import datetime
@@ -10,16 +10,33 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 EXPERIMENTS_DIR = PROJECT_ROOT / "experiments"
-SUBMISSIONS_DIR = PROJECT_ROOT / "submissions"
-EXPERIMENT_LOG = PROJECT_ROOT / "EXPERIMENT_LOG.csv"
 CANDIDATES_MD = PROJECT_ROOT / "SUBMISSION_CANDIDATES.md"
 
-MAX_CANDIDATES = 10
+
+AXIS_WEIGHTS = {
+    "주제적합성": 0.20,
+    "창의성": 0.20,
+    "데이터적정성": 0.20,
+    "활용가능성": 0.20,
+    "기획력": 0.20,
+}
+
+LEVEL_SCORES = {"HIGH": 1.0, "MEDIUM": 0.5, "LOW": 0.2}
+
+# 시연 임팩트 사전 정의
+DEMO_IMPACT = {
+    "gangton_classifier": 0.9,   # SHAP 막대그래프 → 매우 직관적
+    "safety_score": 0.7,         # 점수 + 신호등 → 직관적
+    "anomaly_detection": 0.5,    # 그래프 시각화 가능하나 설명 필요
+    "recommender": 0.6,          # 대체 매물 추천 → 실용적
+    "timeseries": 0.4,           # 추세 그래프 → 보조적
+    "graph": 0.5,                # 네트워크 시각화 → 창의적이나 복잡
+}
 
 
-def load_candidates():
-    """Find all experiments with CANDIDATE status or evaluation recommendation."""
-    candidates = []
+def load_components():
+    """Find all evaluated experiments."""
+    components = []
 
     for exp_dir in sorted(EXPERIMENTS_DIR.glob("exp_*")):
         eval_path = exp_dir / "evaluation.json"
@@ -31,123 +48,110 @@ def load_candidates():
         with open(eval_path) as f:
             evaluation = json.load(f)
 
-        if evaluation.get("recommendation") != "CANDIDATE":
+        if evaluation.get("recommendation") not in ("INTEGRATE", "REVIEW"):
             continue
 
-        # Get CV details
+        model_type = evaluation.get("model_type", "unknown")
         cv_score = evaluation.get("cv_score", 0)
         cv_std = evaluation.get("cv_std", 0)
+        axis_contrib = evaluation.get("axis_contribution", {})
 
-        # Get model type from config
-        config_path = exp_dir / "config.yaml"
-        model_type = "unknown"
-        if config_path.exists():
-            import yaml
-            with open(config_path) as f:
-                config = yaml.safe_load(f)
-            model_type = config.get("model", {}).get("type", "unknown")
+        # 평가축 커버리지 점수
+        axis_score = sum(
+            LEVEL_SCORES.get(level, 0) * AXIS_WEIGHTS.get(axis, 0)
+            for axis, level in axis_contrib.items()
+        )
 
-        # Check if already submitted
-        zip_path = SUBMISSIONS_DIR / f"{exp_dir.name}.zip"
-        has_submission = zip_path.exists()
+        # 시연 임팩트
+        demo_score = DEMO_IMPACT.get(model_type, 0.3)
 
-        candidates.append({
+        # 구현 완성도 (train_log 존재 + CV > 0)
+        readiness = 1.0 if cv_score > 0 else 0.3
+
+        components.append({
             "experiment_id": exp_dir.name,
+            "model_type": model_type,
             "cv_score": cv_score,
             "cv_std": cv_std,
-            "model_type": model_type,
+            "axis_score": axis_score,
+            "demo_score": demo_score,
+            "readiness": readiness,
+            "recommendation": evaluation.get("recommendation"),
             "stability_grade": evaluation.get("stability_grade", "N/A"),
-            "has_submission_zip": has_submission,
         })
 
-    return candidates
+    return components
 
 
-def compute_composite_score(candidate, all_candidates):
-    """Compute ranking score for a candidate."""
-    if not all_candidates:
-        return 0
+def compute_composite(component, all_components):
+    """Compute composite ranking score."""
+    scores = [c["cv_score"] for c in all_components if c["cv_score"] > 0]
 
-    scores = [c["cv_score"] for c in all_candidates]
-    stds = [c["cv_std"] for c in all_candidates]
+    if scores:
+        max_score = max(scores)
+        min_score = min(scores)
+        score_range = max_score - min_score if max_score != min_score else 1
+        norm_cv = (component["cv_score"] - min_score) / score_range if component["cv_score"] > 0 else 0
+    else:
+        norm_cv = 0
 
-    max_score = max(scores) if scores else 1
-    min_score = min(scores) if scores else 0
-    score_range = max_score - min_score if max_score != min_score else 1
-
-    max_std = max(stds) if stds else 1
-
-    # Normalize
-    norm_score = (candidate["cv_score"] - min_score) / score_range
-    norm_stability = 1 - (candidate["cv_std"] / max_std) if max_std > 0 else 1
-
-    # Diversity bonus: unique model type gets bonus
-    model_counts = {}
-    for c in all_candidates:
-        model_counts[c["model_type"]] = model_counts.get(c["model_type"], 0) + 1
-    diversity = 1.0 / model_counts.get(candidate["model_type"], 1)
-
-    # Composite
-    composite = 0.5 * norm_score + 0.2 * norm_stability + 0.3 * diversity
-    return composite
+    composite = (
+        0.3 * norm_cv
+        + 0.3 * component["axis_score"]
+        + 0.2 * component["demo_score"]
+        + 0.2 * component["readiness"]
+    )
+    return round(composite, 3)
 
 
-def rank_and_select(candidates, max_n=MAX_CANDIDATES):
-    """Rank candidates and apply diversity constraints."""
-    if not candidates:
-        return []
+def rank_components(components):
+    """Rank and classify components."""
+    for c in components:
+        c["composite"] = compute_composite(c, components)
 
-    # Compute scores
-    for c in candidates:
-        c["composite_score"] = compute_composite_score(c, candidates)
+    ranked = sorted(components, key=lambda x: x["composite"], reverse=True)
 
-    # Sort by composite score
-    ranked = sorted(candidates, key=lambda x: x["composite_score"], reverse=True)
-
-    # Apply diversity constraints: max 3 from same model family
-    selected = []
-    model_counts = {}
-
+    # Classify priority
+    must_types = {"gangton_classifier"}  # 깡통전세 분류기는 반드시 포함
     for c in ranked:
-        mt = c["model_type"]
-        if model_counts.get(mt, 0) >= 3:
-            continue
-        selected.append(c)
-        model_counts[mt] = model_counts.get(mt, 0) + 1
-        if len(selected) >= max_n:
-            break
+        if c["model_type"] in must_types:
+            c["priority"] = "MUST"
+        elif c["composite"] >= 0.7:
+            c["priority"] = "SHOULD"
+        else:
+            c["priority"] = "NICE_TO_HAVE"
 
-    return selected
+    return ranked
 
 
-def update_candidates_md(selected):
-    """Update SUBMISSION_CANDIDATES.md with ranked candidates."""
+def update_candidates_md(ranked):
+    """Update SUBMISSION_CANDIDATES.md."""
     today = datetime.now().strftime("%Y-%m-%d")
 
     lines = [
-        "# Submission Candidates\n",
-        f"\n## Today's Candidates ({today}) — max {MAX_CANDIDATES}\n\n",
-        "| Rank | Experiment | CV Score | CV Std | Model | Stability | Score | Priority |\n",
-        "|------|-----------|----------|--------|-------|-----------|-------|----------|\n",
+        "# Component Ranking — 천안 자취방 안전지도\n",
+        f"\n## 최종 서비스 포함 우선순위 ({today})\n\n",
+        "| 순위 | 실험 | 모델 유형 | CV Score | 평가축 | 시연 | 완성도 | 종합 | 우선순위 |\n",
+        "|------|------|----------|----------|--------|------|--------|------|----------|\n",
     ]
 
-    for i, c in enumerate(selected, 1):
-        priority = "SUBMIT_FIRST" if i <= 2 else ("SUBMIT_IF_SLOTS" if i <= 5 else "HOLD")
+    for i, c in enumerate(ranked, 1):
         lines.append(
-            f"| {i} | {c['experiment_id']} | {c['cv_score']:.6f} | {c['cv_std']:.6f} "
-            f"| {c['model_type']} | {c['stability_grade']} | {c['composite_score']:.3f} | {priority} |\n"
+            f"| {i} | {c['experiment_id']} | {c['model_type']} | "
+            f"{c['cv_score']:.4f} | {c['axis_score']:.2f} | {c['demo_score']:.1f} | "
+            f"{c['readiness']:.1f} | {c['composite']:.3f} | {c['priority']} |\n"
         )
 
     lines.extend([
-        "\n## Selection Criteria\n",
-        "1. **CV Score** (50%) — higher is better\n",
-        "2. **Stability** (20%) — lower std preferred\n",
-        "3. **Diversity** (30%) — different model families preferred\n",
-        "\n## Notes\n",
-        "- SUBMIT_FIRST: high confidence, submit these\n",
-        "- SUBMIT_IF_SLOTS: good but not top priority\n",
-        "- HOLD: keep as backup, submit only if slots remain\n",
-        "- Manual submission required — do NOT auto-upload\n",
+        "\n## 순위 기준\n",
+        "1. **모델 성능** (30%) — CV score\n",
+        "2. **평가축 커버리지** (30%) — 5대 평가축 기여도\n",
+        "3. **시연 임팩트** (20%) — PT에서 시각적 효과\n",
+        "4. **구현 완성도** (20%) — 실제 동작 여부\n",
+        "\n## 우선순위 분류\n",
+        "- **MUST**: 핵심 차별성, 반드시 포함\n",
+        "- **SHOULD**: 높은 가치, 가능하면 포함\n",
+        "- **NICE_TO_HAVE**: 시간 여유 시 포함\n",
     ])
 
     CANDIDATES_MD.write_text("".join(lines))
@@ -155,30 +159,24 @@ def update_candidates_md(selected):
 
 
 def main():
-    print(f"Ranking submission candidates...")
+    print("Ranking components for 천안 자취방 안전지도...")
     print(f"{'='*50}")
 
-    candidates = load_candidates()
-    print(f"Found {len(candidates)} candidates")
+    components = load_components()
+    print(f"Found {len(components)} evaluated components")
 
-    if not candidates:
-        print("No candidates found. Run evaluate_cv.py first.")
+    if not components:
+        print("No evaluated components found. Run /eval first.")
         sys.exit(0)
 
-    selected = rank_and_select(candidates)
+    ranked = rank_components(components)
 
-    print(f"\nTop {len(selected)} selections:")
-    for i, c in enumerate(selected, 1):
-        print(f"  {i}. {c['experiment_id']} — CV: {c['cv_score']:.6f} ({c['model_type']})")
+    print(f"\nRanking:")
+    for i, c in enumerate(ranked, 1):
+        print(f"  {i}. [{c['priority']}] {c['experiment_id']} — {c['model_type']} (score: {c['composite']:.3f})")
 
-    update_candidates_md(selected)
+    update_candidates_md(ranked)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Rank submission candidates")
-    parser.add_argument("--date", default="today", help="Date filter (unused, for future)")
-    parser.add_argument("--max", type=int, default=MAX_CANDIDATES, help="Max candidates")
-    args = parser.parse_args()
-
-    MAX_CANDIDATES = args.max
     main()

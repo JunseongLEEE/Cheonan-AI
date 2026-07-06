@@ -9,18 +9,17 @@ allowed-tools:
   - Glob
 ---
 
-# /run — Experiment Runner
+# /run — Experiment Runner (천안 자취방 안전지도)
 
-Execute an experiment and capture all outputs.
+실험을 실행하고 모든 출력을 캡처한다.
 
 ## Arguments
-- `$ARGUMENTS` — experiment name or path (e.g., "exp_001_baseline" or "experiments/exp_001_baseline")
+- `$ARGUMENTS` — experiment name or path (e.g., "exp_001_baseline_lgbm")
 
 ## Execution Steps
 
 ### 1. Locate and Validate
 ```bash
-# Find the experiment directory
 ls experiments/*$0* 2>/dev/null || ls $ARGUMENTS 2>/dev/null
 ```
 
@@ -35,22 +34,21 @@ cd experiments/EXP_NAME && python train.py 2>&1 | tee run_output.txt
 ```
 
 Monitor for:
-- OOM errors → report immediately
-- NaN/Inf in outputs → CRITICAL, stop
-- Warnings about data leakage
-- Runtime (flag if > 30min for non-NN models)
+- OOM errors → 즉시 보고
+- NaN/Inf in outputs → CRITICAL, 중단
+- API 키 관련 에러 → .env 확인 안내
+- Runtime > 30min → 경고 플래그
 
 ### 3. Verify Outputs
 
-After training completes, check:
 ```bash
-ls -la oof_preds.npy test_preds.npy train_log.json models/
-python -c "import numpy as np; oof=np.load('oof_preds.npy'); test=np.load('test_preds.npy'); print(f'OOF: {oof.shape}, Test: {test.shape}, OOF range: [{oof.min():.4f}, {oof.max():.4f}]')"
+ls -la train_log.json models/
+# SHAP 출력 확인 (분류기 모델인 경우)
+ls shap/ 2>/dev/null
 ```
 
 ### 4. Update EXPERIMENT_LOG.csv
 
-After successful run, append a row:
 ```python
 import csv, json
 from datetime import datetime
@@ -58,37 +56,30 @@ from datetime import datetime
 with open('train_log.json') as f:
     results = json.load(f)
 
-# Append to EXPERIMENT_LOG.csv
 row = {
     'experiment_id': results['experiment_id'],
-    'name': EXP_NAME,
-    'hypothesis': '...',  # from config.yaml
+    'model_type': results.get('model_type', ''),
     'status': 'COMPLETED',
     'cv_score': results['cv_mean'],
     'cv_std': results['cv_std'],
-    'lb_score': '',
-    'cv_lb_gap': '',
+    'metric': results.get('metric_name', ''),
     'seed': 42,
     'git_commit': GIT_HASH,
     'created_at': datetime.now().isoformat(),
-    'completed_at': datetime.now().isoformat(),
     'notes': ''
 }
 ```
 
 ### 5. Update SUMMARY.md Results
 
-After successful run, update the experiment's `SUMMARY.md` Results section:
-
 ```markdown
 ## Results
 | Metric | Score |
 |--------|-------|
-| CV Mean | {actual cv_mean} |
-| CV Std | {actual cv_std} |
-| CV Fold Scores | {actual fold scores} |
-| LB Score | 미제출 |
-| CV-LB Gap | N/A |
+| CV Mean | {cv_mean} |
+| CV Std | {cv_std} |
+| CV Fold Scores | {fold scores} |
+| SHAP | 생성됨/미생성 |
 | Status | COMPLETED |
 ```
 
@@ -98,27 +89,26 @@ After successful run, update the experiment's `SUMMARY.md` Results section:
 python scripts/build_digest.py
 ```
 
-This updates `logs/experiment_digest.md` so all agents have the latest snapshot.
-
 ### 7. Report Summary
 
 ```
 ========================================
 EXPERIMENT COMPLETE: exp_NNN_name
 ========================================
+Model Type: [gangton_classifier/safety_score/...]
 CV Score: 0.XXXX ± 0.XXXX
 Fold scores: [...]
 Runtime: X분 XX초
-Outputs: oof_preds.npy ✓ | test_preds.npy ✓ | models/ ✓
+SHAP: ✓/✗
+Outputs: train_log.json ✓ | models/ ✓
 SUMMARY.md: updated ✓
-Digest: rebuilt ✓
 
 다음 단계: /eval exp_NNN_name
 ========================================
 ```
 
 ## Error Handling
-- If OOM: suggest `--batch_size` reduction or feature count reduction
-- If NaN: check for division by zero, log transform on negatives, missing value handling
-- If slow: profile and suggest optimization
-- If crash: save partial logs, report stack trace, update SUMMARY.md status to FAILED
+- OOM: batch size 줄이기 또는 피처 수 줄이기 제안
+- NaN: division by zero, log transform on negatives, 결측값 처리 확인
+- Slow: 프로파일링 및 최적화 제안
+- Crash: 부분 로그 저장, stack trace 보고, SUMMARY.md 상태를 FAILED로

@@ -1,41 +1,48 @@
-# Competition Rules & Constraints
+# Competition Rules & Constraints — 천안시 대회
 
-## Submission Rules
-- Maximum submissions per day: defined by competition (default assume 5)
-- We select at most 10 candidates internally, then manually choose which to submit
-- Final submission selection: pick 2 (or as allowed) based on CV stability + LB correlation
+## 대회 규정
+- 제출: 서면 기획서 (8/31까지)
+- 예선 통과 시 본선 오프라인 PT 10분 (10월)
+- 참가: 1~4인 팀, 대한민국 국민
 
-## Anti-Overfitting Protocol
-1. Never optimize directly for leaderboard score
-2. Track CV-LB gap: if |CV - LB| > threshold, investigate before trusting
-3. Use time-based or group-based splits when data has temporal/group structure
-4. Ensemble diversity > ensemble size
-5. If a single feature improves LB but not CV, it's likely leakage — remove it
+## 데이터 규정 (반드시 준수)
+1. **공공 API / 공공포털 데이터만 허용** — 수집시점·범위·주요컬럼·출처 URL 명기
+2. **민간 크롤링 금지** — 직방, 다방, 네이버부동산, 부동산플래닛 등 상업 데이터 무단사용 엄격 금지
+3. **개인정보 보호** — 등기부 임대인 실명 미저장, 사용자 업로드분만 일시 OCR 처리
+4. **명예훼손 주의** — 매물·임대인 실명 노출 금지, "통계적 신호·참고용" 면책 명시
 
-## Data Handling
-- No data leakage between train/validation/test
-- Feature engineering must be fit on train only, transform on val/test
-- Target encoding must use CV-aware encoding (within-fold only)
+## 모델 개발 프로토콜
+1. **CV 설계 우선** — 깡통전세 분류기는 PU러닝 고려한 CV 전략 필수
+2. **라벨 부족 대응** — 확정 사기 라벨 극소수, 휴리스틱 약지도 + PU러닝 병행
+3. **설명 가능성** — SHAP으로 "왜 위험한가" 설명 가능해야 함 (발표력 30점)
+4. **다축 평가** — 단일 메트릭이 아닌 8축 안전성 종합 평가
+5. **임계값 주의** — 전세가율 80% 단일 임계 맹신 금지, 선순위채권비율 병행
 
 ## Reproducibility Requirements
-Every experiment MUST record:
+매 실험 기록:
 - Random seed (default: 42)
-- Exact data version / preprocessing steps
-- Model hyperparameters (full config.yaml)
-- CV fold indices
-- Git commit hash at time of run
-- Environment (Python version, key package versions)
+- 데이터 수집 시점·버전
+- 모델 하이퍼파라미터 (config.yaml)
+- CV 폴드 인덱스
+- Git commit hash
+- Python/패키지 버전
 
 ## Experiment Lifecycle
-1. PLANNED → experiment created with hypothesis
-2. RUNNING → code executing
-3. COMPLETED → CV results available
-4. EVALUATED → compared against baselines, leakage checked
-5. CANDIDATE → selected as submission candidate
-6. SUBMITTED → actually uploaded to competition site
-7. ARCHIVED → no longer active
+1. PLANNED → 가설 수립, 실험 생성
+2. RUNNING → 코드 실행 중
+3. COMPLETED → 결과 확인
+4. EVALUATED → 품질 체크 완료
+5. INTEGRATED → 최종 서비스에 통합
+6. ARCHIVED → 더 이상 활성 아님
 
-## Code Quality
-- Scripts must run end-to-end without manual intervention
-- No hardcoded paths (use config or relative paths)
-- Memory-efficient: clear large objects, use generators where possible
+## 코드 품질
+- 스크립트는 end-to-end 자동 실행 가능해야 함
+- 하드코딩 경로 금지 (config 또는 상대경로)
+- API 키는 .env에서 로드, 절대 커밋 금지
+- 메모리 효율: 대량 API 응답 스트리밍/분할 저장
+
+## 발표 준비 (본선)
+- PT 10분 = 발표 7분 + Q&A 3분 (예상)
+- 실제 작동 데모 필수 (녹화 백업)
+- SHAP 막대그래프, 시뮬레이터, 신호등 지도 시연
+- 임팩트 스토리: "보증금 1건 방어 = 수천만원, 30대 주거이탈 억제 = 인구 유지"

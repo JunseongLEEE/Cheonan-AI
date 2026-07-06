@@ -1,5 +1,5 @@
 ---
-description: "Evaluate experiment results — compares against baseline, checks for leakage/overfitting, decides if experiment is a valid submission candidate. Pass experiment name as argument."
+description: "Evaluate experiment results — checks domain validity, model quality, and competition evaluation axis contribution. Pass experiment name as argument."
 user-invocable: true
 allowed-tools:
   - Bash
@@ -10,102 +10,81 @@ allowed-tools:
   - Grep
 ---
 
-# /eval — Experiment Evaluator
+# /eval — Experiment Evaluator (천안 자취방 안전지도)
 
-Evaluate an experiment's results for quality, stability, and leakage.
+실험 결과의 품질, 도메인 적합성, 대회 평가축 기여도를 평가한다.
 
 ## Arguments
-- `$ARGUMENTS` — experiment name (e.g., "exp_001_baseline")
+- `$ARGUMENTS` — experiment name (e.g., "exp_001_baseline_lgbm")
 
 ## Step 1: Load Results
 
-Read these files from the experiment directory:
+Read from experiment directory:
 - `train_log.json` — CV scores, feature importance
 - `config.yaml` — model config, seed
-- `oof_preds.npy` — out-of-fold predictions
-- `test_preds.npy` — test predictions
+- `SUMMARY.md` — hypothesis
 
 Also load:
-- `EXPERIMENT_LOG.csv` — for baseline comparison
-- Previous experiments' `train_log.json` — for relative ranking
+- `EXPERIMENT_LOG.csv` — baseline 비교용
 
 ## Step 2: Run Checks
 
 ### A. Score Comparison
-```python
-import json, numpy as np
-
-# Current experiment
-with open(f'experiments/{exp}/train_log.json') as f:
-    current = json.load(f)
-
-# Find baseline (first COMPLETED experiment)
-# Compare: improvement = current['cv_mean'] - baseline['cv_mean']
-```
+- 현재 실험 CV score vs baseline
+- 개선 폭 계산
 
 ### B. Stability Analysis
 - CV std: < 0.005 = A, < 0.01 = B, < 0.02 = C, >= 0.02 = D
-- Max fold deviation from mean
-- If any single fold > 3σ from mean → flag as suspicious
+- 단일 fold > 3σ → 의심 플래그
 
-### C. Leakage Detection
-```python
-oof = np.load('oof_preds.npy')
-test = np.load('test_preds.npy')
+### C. Domain Validity (천안 특화)
+- [ ] 천안 법정동코드(44131, 44133) 데이터만 사용
+- [ ] 전세가율 계산 정확 (전세금 ÷ 매매가)
+- [ ] 공시가 연계 정확 (HUG 126% 룰)
+- [ ] 건물연령 = 현재연도 - 사용승인년도
+- [ ] 공공 API 데이터만 사용 (출처 명기)
+- [ ] 개인정보 노출 위험 없음
 
-# 1. Distribution shift
-print(f"OOF: mean={oof.mean():.4f}, std={oof.std():.4f}")
-print(f"Test: mean={test.mean():.4f}, std={test.std():.4f}")
-# If |oof_mean - test_mean| / oof_std > 0.5 → flag
+### D. SHAP Check (분류기 모델)
+- SHAP 출력 존재 여부
+- 상위 피처가 도메인 지식과 일치하는가
+- 전세가율이 상위 피처에 포함되는가
 
-# 2. Suspicious score jump
-# If improvement > +0.05 over baseline without clear reason → flag
-
-# 3. Check for NaN/Inf
-assert not np.any(np.isnan(oof)), "NaN in OOF!"
-assert not np.any(np.isnan(test)), "NaN in test!"
-```
-
-### D. Overfitting Signals
-- If LB score available: check CV-LB gap trend
-- If model complexity increased but CV gain is marginal → flag
-- If all improvement comes from 1 fold → flag
+### E. 평가축 기여도
+| 평가축 | 기여 | 근거 |
+|--------|------|------|
+| 주제적합성 | HIGH/MEDIUM/LOW | ... |
+| 창의성 | HIGH/MEDIUM/LOW | ... |
+| 데이터적정성 | HIGH/MEDIUM/LOW | ... |
+| 활용가능성 | HIGH/MEDIUM/LOW | ... |
 
 ## Step 3: Recommendation
 
 | Condition | Decision |
 |-----------|----------|
-| Leakage confirmed | REJECT |
+| 도메인 체크 실패 | REJECT |
 | CV worse than baseline | REJECT |
-| CV-LB gap > 2x average | REVIEW |
 | CV std grade D | REVIEW |
-| Score up + all checks pass | CANDIDATE |
+| SHAP 누락 (분류기) | REVIEW |
+| Score up + all checks pass | INTEGRATE |
 
 ## Step 4: Save & Report
 
 Save `evaluation.json` in experiment directory.
-
-Update experiment status in EXPERIMENT_LOG.csv to EVALUATED or CANDIDATE.
+Update experiment status in EXPERIMENT_LOG.csv.
 
 ```
 ========================================
 EVALUATION: exp_NNN_name
 ========================================
-CV Score:    0.XXXX ± 0.XXXX (baseline: 0.XXXX)
-Improvement: +0.XXXX
-Stability:   A
-Leakage:     CLEAN
-Distribution: OK (shift=0.XX)
+CV Score:      0.XXXX ± 0.XXXX (baseline: 0.XXXX)
+Improvement:   +0.XXXX
+Stability:     A
+Domain Check:  PASS
+SHAP:          Available ✓
+평가축 기여:    주제적합성 HIGH, 활용가능성 HIGH
 
-→ CANDIDATE ✓
-다음 단계: /pack exp_NNN_name
-========================================
-```
-
-Or if rejected:
-```
-→ REJECT ✗
-사유: [reason]
-제안: [what to try instead]
+→ INTEGRATE ✓
+다음 단계: /dev (다음 실험) 또는 /present (기획서 준비)
 ========================================
 ```

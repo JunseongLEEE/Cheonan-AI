@@ -1,187 +1,159 @@
 #!/usr/bin/env python3
-"""Validate a DACON code submission zip file before manual upload.
+"""Validate data sources and compliance with competition rules.
+천안 청년 자취방 안전지도 — 공공데이터 규정 준수 검증.
 
-DACON required structure:
-    submit.zip
-    ├── model/              # Trained model weights
-    ├── script.py           # Inference-only code
-    └── requirements.txt    # Extra packages
-
-Checks:
-    1. Zip structure (exactly 3 top-level entries)
-    2. script.py exists and has correct structure
-    3. model/ directory exists and is not empty
-    4. requirements.txt exists
-    5. Offline compatibility (no internet calls in script.py)
-    6. script.py reads from data/, writes to output/submission.csv
+대회 규정:
+- 정식 API 또는 공공포털 등 합법 수집 데이터만 허용
+- 수집시점·범위·주요컬럼·출처 URL 기재 필수
+- 민간 크롤링 금지 (직방/다방/네이버부동산)
 """
 
-import argparse
-import re
+import json
 import sys
-import zipfile
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATA_DIR = PROJECT_ROOT / "data"
+EXPERIMENTS_DIR = PROJECT_ROOT / "experiments"
 
-# Patterns that indicate online dependency (BLOCKED)
-ONLINE_PATTERNS = [
-    (r'from_pretrained\s*\(\s*["\'](?![\./])', "HuggingFace Hub download (use local path instead)"),
-    (r'requests\.(get|post|put|delete)\s*\(', "HTTP request"),
-    (r'urllib\.(request|parse)', "urllib network call"),
-    (r'wget\.', "wget download"),
-    (r'download\s*\(', "download() call"),
-    (r'api_key|API_KEY|OPENAI|openai\.', "API key / OpenAI usage"),
-    (r'anthropic\.', "Anthropic API call"),
-    (r'huggingface_hub', "HuggingFace Hub import"),
+# 허용된 공공 데이터 소스
+ALLOWED_SOURCES = {
+    "realestate": "국토교통부 실거래가 API (data.go.kr)",
+    "building": "건축HUB 건축물대장 API (data.go.kr)",
+    "housing_price": "국토교통부 공시가격 (data.go.kr)",
+    "cctv": "전국CCTV표준데이터 (data.go.kr)",
+    "commerce": "소상공인 상가정보 API (data.go.kr)",
+    "medical": "건강보험심사평가원 병원정보 (data.go.kr)",
+    "air_quality": "에어코리아 대기오염 (data.go.kr)",
+    "sgis": "통계지리정보서비스 SGIS (sgisapi.kostat.go.kr)",
+    "flood": "행정안전부 침수흔적도 (data.go.kr)",
+    "taas": "TAAS 교통사고 GIS (taas.koroad.or.kr)",
+}
+
+# 금지된 소스 패턴
+FORBIDDEN_PATTERNS = [
+    "zigbang", "직방",
+    "dabang", "다방",
+    "naver.com/realestate", "네이버부동산",
+    "부동산플래닛", "bdsplanet",
+    "peterpan", "피터팬",
 ]
 
-# Patterns that script.py SHOULD have
-REQUIRED_PATTERNS = [
-    (r"os\.path\.join\s*\(\s*['\"]data['\"]|['\"]data/|data_path", "Reads from data/ directory"),
-    (r"output/submission\.csv|os\.path\.join\s*\(\s*['\"]output['\"]", "Writes to output/submission.csv"),
-    (r"if\s+__name__\s*==\s*['\"]__main__['\"]", "__main__ block"),
-    (r"os\.path\.join\s*\(\s*['\"]model['\"]|['\"]model/", "Loads model from model/ directory"),
-]
 
-
-def validate(zip_path: Path):
-    """Validate DACON submission zip."""
-    zip_path = Path(zip_path).resolve()
-
-    if not zip_path.exists():
-        print(f"ERROR: {zip_path} not found")
-        sys.exit(1)
-
-    print(f"Validating DACON submission: {zip_path.name}")
-    print(f"{'=' * 60}")
-
-    errors = []
+def check_data_directory():
+    """Check data directory for compliance."""
+    issues = []
     warnings = []
 
-    # === 1. Zip structure ===
-    try:
-        with zipfile.ZipFile(zip_path, "r") as zf:
-            names = zf.namelist()
-    except zipfile.BadZipFile:
-        errors.append("Invalid zip file")
-        _print_results(errors, warnings)
-        sys.exit(1)
+    if not DATA_DIR.exists():
+        issues.append("data/ 디렉토리가 존재하지 않습니다")
+        return issues, warnings
 
-    print(f"\nContents ({len(names)} entries):")
-    for n in names[:20]:
-        print(f"  {n}")
-    if len(names) > 20:
-        print(f"  ... and {len(names) - 20} more")
+    # Check raw data
+    raw_dir = DATA_DIR / "raw"
+    if raw_dir.exists():
+        categories = [d.name for d in raw_dir.iterdir() if d.is_dir()]
+        print(f"수집된 데이터 카테고리: {categories}")
 
-    # Check top-level entries
-    top_level = set()
-    for n in names:
-        parts = n.split("/")
-        top_level.add(parts[0])
-
-    print(f"\nTop-level entries: {sorted(top_level)}")
-
-    # Required entries
-    if "script.py" not in names:
-        errors.append("MISSING: script.py not found in zip")
-
-    if "requirements.txt" not in names:
-        errors.append("MISSING: requirements.txt not found in zip")
-
-    model_files = [n for n in names if n.startswith("model/") and not n.endswith("/")]
-    if not model_files:
-        errors.append("MISSING: model/ directory is empty or missing")
+        for cat in categories:
+            if cat not in ALLOWED_SOURCES and cat not in ("manual",):
+                warnings.append(f"알 수 없는 데이터 카테고리: {cat} — 출처 확인 필요")
     else:
-        total_model_size = sum(
-            zipfile.ZipFile(zip_path).getinfo(f).file_size for f in model_files
-        )
-        model_size_mb = total_model_size / (1024 * 1024)
-        print(f"\nModel files: {len(model_files)} files, {model_size_mb:.1f} MB")
-        if model_size_mb > 2000:
-            warnings.append(f"Model size is {model_size_mb:.0f} MB — may exceed server limits")
+        warnings.append("data/raw/ 디렉토리 없음 — 아직 수집 전")
 
-    # Check for unexpected top-level entries
-    allowed_top = {"model", "script.py", "requirements.txt"}
-    # model/ entries show up as "model" in top_level
-    unexpected = top_level - allowed_top - {"model"}
-    # Also filter out __MACOSX and similar
-    unexpected = {u for u in unexpected if not u.startswith("__") and not u.startswith(".")}
-    if unexpected:
-        warnings.append(f"Unexpected top-level entries: {unexpected} — DACON expects only model/, script.py, requirements.txt")
-
-    # === 2. script.py validation ===
-    if "script.py" in names:
-        with zipfile.ZipFile(zip_path) as zf:
-            script_content = zf.read("script.py").decode("utf-8")
-
-        print(f"\nscript.py: {len(script_content)} bytes, {len(script_content.splitlines())} lines")
-
-        # Offline check
-        print("\nOffline compatibility check:")
-        for pattern, desc in ONLINE_PATTERNS:
-            matches = re.findall(pattern, script_content)
-            if matches:
-                errors.append(f"OFFLINE VIOLATION: {desc} (pattern: {pattern})")
-                print(f"  [X] {desc}")
-            else:
-                print(f"  [OK] No {desc}")
-
-        # Required structure check
-        print("\nRequired structure check:")
-        for pattern, desc in REQUIRED_PATTERNS:
-            if re.search(pattern, script_content):
-                print(f"  [OK] {desc}")
-            else:
-                warnings.append(f"script.py may be missing: {desc}")
-                print(f"  [?] {desc} — not found (may be OK if implemented differently)")
-
-    # === 3. requirements.txt ===
-    if "requirements.txt" in names:
-        with zipfile.ZipFile(zip_path) as zf:
-            req_content = zf.read("requirements.txt").decode("utf-8").strip()
-
-        if req_content:
-            packages = [l.strip() for l in req_content.splitlines() if l.strip() and not l.startswith("#")]
-            print(f"\nrequirements.txt: {len(packages)} packages")
-            for p in packages:
-                print(f"  - {p}")
-        else:
-            print("\nrequirements.txt: empty (using server defaults only)")
-
-    # === 4. File size ===
-    zip_size_mb = zip_path.stat().st_size / (1024 * 1024)
-    print(f"\nTotal zip size: {zip_size_mb:.1f} MB")
-
-    # === Results ===
-    _print_results(errors, warnings)
-
-    if errors:
-        sys.exit(1)
-    return True
+    return issues, warnings
 
 
-def _print_results(errors, warnings):
-    print(f"\n{'=' * 60}")
-    if errors:
-        print("ERRORS (must fix before submitting):")
-        for e in errors:
-            print(f"  [X] {e}")
-    if warnings:
-        print("WARNINGS (review before submitting):")
-        for w in warnings:
-            print(f"  [!] {w}")
-    if not errors and not warnings:
-        print("VALIDATION PASSED — ready to submit to DACON")
-    elif not errors:
-        print("VALIDATION PASSED (with warnings) — review warnings before submitting")
+def check_experiment_sources():
+    """Check experiments for forbidden data sources."""
+    issues = []
+
+    for exp_dir in sorted(EXPERIMENTS_DIR.glob("exp_*")):
+        # Check train.py for forbidden patterns
+        train_py = exp_dir / "train.py"
+        if train_py.exists():
+            content = train_py.read_text()
+            for pattern in FORBIDDEN_PATTERNS:
+                if pattern.lower() in content.lower():
+                    issues.append(f"{exp_dir.name}/train.py: 금지된 데이터 소스 패턴 '{pattern}' 발견")
+
+        # Check train_log.json data_sources
+        train_log = exp_dir / "train_log.json"
+        if train_log.exists():
+            with open(train_log) as f:
+                data = json.load(f)
+            sources = data.get("data_sources", [])
+            if not sources:
+                issues.append(f"{exp_dir.name}: data_sources 미기재 — 출처 명기 필수")
+
+    return issues
+
+
+def check_privacy():
+    """Check for potential privacy issues."""
+    issues = []
+
+    for exp_dir in sorted(EXPERIMENTS_DIR.glob("exp_*")):
+        for py_file in exp_dir.glob("*.py"):
+            content = py_file.read_text()
+            # Check for personal info patterns
+            if "임대인" in content and ("이름" in content or "성명" in content):
+                if "익명" not in content and "마스킹" not in content:
+                    issues.append(f"{exp_dir.name}/{py_file.name}: 임대인 개인정보 노출 위험 — 마스킹 필요")
+
+    return issues
+
+
+def validate():
+    """Run all validation checks."""
+    print("천안 자취방 안전지도 — 데이터 규정 준수 검증")
+    print(f"{'='*60}")
+
+    all_issues = []
+    all_warnings = []
+
+    # 1. Data directory check
+    print("\n1. 데이터 디렉토리 검사")
+    issues, warnings = check_data_directory()
+    all_issues.extend(issues)
+    all_warnings.extend(warnings)
+
+    # 2. Experiment source check
+    print("\n2. 실험 데이터 소스 검사")
+    exp_issues = check_experiment_sources()
+    all_issues.extend(exp_issues)
+
+    # 3. Privacy check
+    print("\n3. 개인정보 보호 검사")
+    priv_issues = check_privacy()
+    all_issues.extend(priv_issues)
+
+    # Results
+    print(f"\n{'='*60}")
+    if all_issues:
+        print("ISSUES (반드시 수정):")
+        for issue in all_issues:
+            print(f"  [X] {issue}")
+    if all_warnings:
+        print("WARNINGS (확인 필요):")
+        for warning in all_warnings:
+            print(f"  [!] {warning}")
+    if not all_issues and not all_warnings:
+        print("VALIDATION PASSED — 모든 규정 준수 확인")
+    elif not all_issues:
+        print("VALIDATION PASSED (경고 있음)")
     else:
-        print("VALIDATION FAILED — fix errors before submitting")
+        print("VALIDATION FAILED — 이슈 수정 필요")
+
+    # Show allowed sources reference
+    print(f"\n{'='*60}")
+    print("허용된 공공 데이터 소스:")
+    for key, desc in ALLOWED_SOURCES.items():
+        print(f"  - {key}: {desc}")
+
+    return len(all_issues) == 0
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Validate DACON code submission zip")
-    parser.add_argument("--zip", required=True, help="Path to submission zip")
-    args = parser.parse_args()
-
-    validate(Path(args.zip))
+    success = validate()
+    sys.exit(0 if success else 1)

@@ -1,0 +1,103 @@
+{
+  "experiment_id": "exp_001_baseline_lgbm",
+  "model_type": "gangton_classifier",
+  "hypothesis": "전세가율 90% 이상을 위험으로, 60% 이하를 안전으로 약지도 라벨링 → LightGBM으로 깡통전세 분류",
+  "cv_score": 0.9984025314587207,
+  "cv_std": 0.00018450590603171432,
+  "metric": "AUC",
+  "f1_score": 0.9881304099932618,
+  "n_folds": 5,
+  "n_samples": 33638,
+  "n_positive": 19310,
+  "n_negative": 14328,
+  "seed": 42,
+  "cheonan_codes": [
+    "44131",
+    "44133"
+  ],
+  "shap_generated": true,
+  "feature_importance": [
+    {
+      "feature": "보증금_매매가비율",
+      "importance": 258142.81213125587
+    },
+    {
+      "feature": "건물연령",
+      "importance": 25253.942631796002
+    },
+    {
+      "feature": "동_거래건수",
+      "importance": 14921.126762211323
+    },
+    {
+      "feature": "거래연도",
+      "importance": 14367.711531460285
+    },
+    {
+      "feature": "보증금_동평균_비율",
+      "importance": 12085.509544074535
+    },
+    {
+      "feature": "㎡당_보증금",
+      "importance": 8460.362682580948
+    },
+    {
+      "feature": "동_평균보증금",
+      "importance": 8136.67568269372
+    },
+    {
+      "feature": "전용면적",
+      "importance": 6830.03446637094
+    },
+    {
+      "feature": "보증금_만원",
+      "importance": 5019.2476660609245
+    },
+    {
+      "feature": "보증금_log",
+      "importance": 1089.6602302789688
+    }
+  ],
+  "shap_importance": [
+    {
+      "feature": "보증금_매매가비율",
+      "mean_abs_shap": 7.524680700530964
+    },
+    {
+      "feature": "거래연도",
+      "mean_abs_shap": 3.8966942521291594
+    },
+    {
+      "feature": "보증금_동평균_비율",
+      "mean_abs_shap": 0.8940771799664847
+    },
+    {
+      "feature": "동_거래건수",
+      "mean_abs_shap": 0.8536843790808679
+    },
+    {
+      "feature": "전용면적",
+      "mean_abs_shap": 0.5047559917308777
+    },
+    {
+      "feature": "건물연령",
+      "mean_abs_shap": 0.43241200482552306
+    },
+    {
+      "feature": "동_평균보증금",
+      "mean_abs_shap": 0.24124458379280903
+    },
+    {
+      "feature": "보증금_만원",
+      "mean_abs_shap": 0.19706011762550976
+    },
+    {
+      "feature": "㎡당_보증금",
+      "mean_abs_shap": 0.15831780510242077
+    },
+    {
+      "feature": "보증금_log",
+      "mean_abs_shap": 0.07461557760950811
+    }
+  ]
+}
