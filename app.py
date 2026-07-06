@@ -5,6 +5,7 @@
 """
 
 import json
+import os
 from pathlib import Path
 
 import folium
@@ -695,11 +696,12 @@ with tab2:
         embed_url = f"https://maps.google.com/maps?q={query}&hl=ko&z=16&output=embed"
         st.components.v1.iframe(embed_url, height=360)
 
-        sv_url = f"https://www.google.com/maps/@?api=1&map_action=pano&viewpoint={d_lat},{d_lon}"
+        # 항공사진(위성뷰) 링크 — 스트리트뷰는 소규모 동네 미지원 많음
+        satellite_url = f"https://www.google.com/maps/@{d_lat},{d_lon},17z/data=!3m1!1e3"
         st.markdown(
             f"<div style='text-align:center;margin-top:0.3rem;margin-bottom:0.6rem;'>"
-            f"<a href='{sv_url}' target='_blank' style='font-size:0.9rem;color:#90caf9;'>"
-            f"🚶 스트리트뷰 열기 (지원 지역에 한함)</a>"
+            f"<a href='{satellite_url}' target='_blank' style='font-size:0.9rem;color:#90caf9;'>"
+            f"🛰️ 위성뷰로 보기</a>"
             f"</div>",
             unsafe_allow_html=True,
         )
@@ -1105,6 +1107,20 @@ with tab5:
     st.header("AI 주거안전 상담")
     st.caption("RAG(Retrieval-Augmented Generation) + LightGBM 위험도 진단 — 자연어로 물어보세요")
 
+    # ── 연결 상태 뱃지 (배포 진단용) ──
+    try:
+        from scripts import rag_chatbot as _rag
+        _key_ok = bool(os.getenv("OPENAI_API_KEY")) or _rag._has_openai_key()
+    except Exception:
+        _key_ok = False
+
+    _status_col1, _status_col2 = st.columns([3, 1])
+    with _status_col2:
+        if _key_ok:
+            st.success("🟢 OpenAI 연결됨")
+        else:
+            st.error("🔴 OpenAI 미연결 (Secrets 확인 필요)")
+
     # ── RAG 아키텍처 안내 (접힘) ──
     with st.expander("🧠 챗봇 아키텍처 (RAG + Tool Use)", expanded=False):
         st.markdown("""
@@ -1119,6 +1135,20 @@ with tab5:
         | **LLM** | OpenAI gpt-4o-mini — 검색·툴 결과를 근거로 답변 생성 |
         | **Fallback** | 임베딩/LLM 실패 시 rule-based 합성으로 무중단 동작 |
         """)
+
+        # 배포 진단 (연결 실패 시만 자세히 표시)
+        if st.button("🔧 OpenAI 연결 진단", key="diag_btn"):
+            with st.spinner("진단 중..."):
+                info = _rag.diagnose()
+            st.json(info)
+            if not info["openai_reachable"]:
+                st.warning(
+                    "**해결 방법**\n\n"
+                    "1. Streamlit Cloud 대시보드 → 앱 → **⋯ (설정)** → **Secrets**\n"
+                    "2. 아래 형식으로 입력되어 있는지 확인 (따옴표 필수):\n"
+                    "```toml\nOPENAI_API_KEY = \"sk-proj-...\"\n```\n"
+                    "3. 저장 후 앱 **Reboot**"
+                )
 
     @st.cache_data
     def load_chatbot_context():
@@ -1354,10 +1384,18 @@ with tab5:
                 badges.append("🔧 LightGBM 시뮬레이터")
             if "dong_lookup" in result["tool_used"]:
                 badges.append("📊 동네 조회")
-            llm_badge = "🤖 OpenAI" if result["llm"] == "openai" else "⚙️ Rule-based"
+            llm_badge = "🤖 OpenAI gpt-4o-mini" if result["llm"] == "openai" else "⚙️ Rule-based (OpenAI 미연결)"
             badges.append(llm_badge)
 
             text = result["text"]
+
+            # ⚠ Fallback 사용 시 상단에 눈에 띄는 경고
+            if result["llm"] != "openai":
+                text = (
+                    "> ⚠️ **OpenAI가 응답하지 않아 rule-based 응답으로 대체되었습니다.** "
+                    "챗봇 상단 '🔧 OpenAI 연결 진단' 버튼으로 원인을 확인하세요.\n\n"
+                ) + text
+
             if result.get("radar_data"):
                 text += "\n\n---RADAR---"
 

@@ -416,7 +416,33 @@ SYSTEM_PROMPT = """너는 '천안 청년 자취방 안전지도' 서비스의 AI
 
 
 def _has_openai_key() -> bool:
+    # 매 호출마다 secrets 재로드 시도 (import 타이밍 문제 회피)
+    _load_from_streamlit_secrets()
     return bool(os.getenv("OPENAI_API_KEY"))
+
+
+def diagnose() -> dict:
+    """배포 진단용 — Streamlit Cloud에서 OpenAI 연결 상태 확인."""
+    _load_from_streamlit_secrets()
+    info = {
+        "openai_key_present": bool(os.getenv("OPENAI_API_KEY")),
+        "openai_key_prefix": (os.getenv("OPENAI_API_KEY") or "")[:10] + "..." if os.getenv("OPENAI_API_KEY") else None,
+        "openai_reachable": False,
+        "error": None,
+    }
+    if info["openai_key_present"]:
+        try:
+            from openai import OpenAI
+            client = OpenAI()
+            resp = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": "ping"}],
+                max_tokens=5,
+            )
+            info["openai_reachable"] = bool(resp.choices)
+        except Exception as e:
+            info["error"] = f"{type(e).__name__}: {str(e)[:200]}"
+    return info
 
 
 def _call_openai(query: str, context: str, history: list[dict]) -> str | None:
