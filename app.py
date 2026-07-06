@@ -1124,7 +1124,7 @@ with tab5:
     # ── RAG 아키텍처 안내 (접힘) ──
     with st.expander("🧠 챗봇 아키텍처 (RAG + Tool Use)", expanded=False):
         st.markdown("""
-        **파이프라인**: `Query → Intent Router → KB Retrieval + Tool Use → LLM(gpt-4o-mini) → Response`
+        **파이프라인**: `Query → Intent Router → KB Retrieval + Tool Use(시뮬레이터/동조회/뉴스) → LLM(gpt-5-mini) → Response`
 
         | 컴포넌트 | 역할 |
         |---|---|
@@ -1132,7 +1132,8 @@ with tab5:
         | **Embedder** | OpenAI `text-embedding-3-small` (1536-d), 코사인 유사도 top-3 검색 |
         | **Simulator Tool** | LightGBM 깡통전세 분류기 (AUC 0.989) + SHAP 설명 |
         | **Dong Lookup Tool** | 65개 동 8축 안전점수 · 전세가율 추세 조회 |
-        | **LLM** | OpenAI gpt-4o-mini — 검색·툴 결과를 근거로 답변 생성 |
+        | **News Tool** | 네이버 뉴스 검색 API(공식) · 실패 시 Google News RSS 폴백 |
+        | **LLM** | OpenAI gpt-5-mini — 검색·툴·뉴스 결과를 근거로 답변 생성 |
         | **Fallback** | 임베딩/LLM 실패 시 rule-based 합성으로 무중단 동작 |
         """)
 
@@ -1384,10 +1385,26 @@ with tab5:
                 badges.append("🔧 LightGBM 시뮬레이터")
             if "dong_lookup" in result["tool_used"]:
                 badges.append("📊 동네 조회")
-            llm_badge = "🤖 OpenAI gpt-4o-mini" if result["llm"] == "openai" else "⚙️ Rule-based (OpenAI 미연결)"
+            if "news" in result["tool_used"]:
+                badges.append("🔎 뉴스 검색")
+            llm_badge = "🤖 OpenAI gpt-5-mini" if result["llm"] == "openai" else "⚙️ Rule-based (OpenAI 미연결)"
             badges.append(llm_badge)
 
             text = result["text"]
+
+            # 뉴스가 있으면 본문 아래에 출처 링크 나열 (LLM 답변에도, fallback에도 공통 적용)
+            news_items = result.get("news") or []
+            if news_items and "📰" not in text:
+                text += "\n\n**📰 참고한 최근 뉴스**\n"
+                for i, n in enumerate(news_items[:4], 1):
+                    title = (n.get("title") or "").strip()
+                    link = (n.get("link") or "").strip()
+                    src = n.get("source", "")
+                    pub = (n.get("pubDate") or "").strip()[:16]
+                    if link:
+                        text += f"{i}. [{title}]({link}) — *{src}* {pub}\n"
+                    else:
+                        text += f"{i}. {title} — *{src}* {pub}\n"
 
             # ⚠ Fallback 사용 시 상단에 눈에 띄는 경고
             if result["llm"] != "openai":

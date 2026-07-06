@@ -28,12 +28,13 @@ Architecture
   │ 3. Tool Execution                        │
   │    - LightGBM predict() + SHAP           │
   │    - 동별 안전점수/추세 조회               │
+  │    - 뉴스 검색(Naver News API/Google RSS)│
   └─────────────────────────────────────────┘
         │
         ▼
   ┌─────────────────────────────────────────┐
   │ 4. LLM Generation                        │
-  │    - OpenAI gpt-4o-mini (context 주입)   │
+  │    - OpenAI gpt-5-mini (context 주입)    │
   │    - 없으면 rule-based composer fallback │
   └─────────────────────────────────────────┘
         │
@@ -71,9 +72,14 @@ def _load_from_streamlit_secrets():
     try:
         import streamlit as st
         # st.secrets 접근은 앱 컨텍스트가 있을 때만 유효
-        if hasattr(st, "secrets") and "OPENAI_API_KEY" in st.secrets:
-            if not os.environ.get("OPENAI_API_KEY"):
-                os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
+        if not hasattr(st, "secrets"):
+            return
+        for _key in ("OPENAI_API_KEY", "NAVER_CLIENT_ID", "NAVER_CLIENT_SECRET"):
+            try:
+                if _key in st.secrets and not os.environ.get(_key):
+                    os.environ[_key] = st.secrets[_key]
+            except Exception:
+                continue
     except Exception:
         pass
 
@@ -400,8 +406,106 @@ def tool_dong_lookup(dong: str, df_safety: pd.DataFrame, df_trends: pd.DataFrame
 
 
 # ═════════════════════════════════════════════
+# 3-1. News Tool (Naver News API + Google News RSS fallback)
+# ═════════════════════════════════════════════
+
+def _has_naver_keys() -> bool:
+    _load_from_streamlit_secrets()
+    return bool(os.getenv("NAVER_CLIENT_ID") and os.getenv("NAVER_CLIENT_SECRET"))
+
+
+def _strip_html(text: str) -> str:
+    """HTML 태그 제거 (Naver 응답에 <b> 태그 등 포함)."""
+    return re.sub(r"<[^>]+>", "", text or "").replace("&quot;", '"').replace("&amp;", "&")
+
+
+def _search_naver_news(query: str, k: int = 5) -> list[dict]:
+    """네이버 뉴스 검색 API — 공식·합법."""
+    import urllib.request
+    import urllib.parse
+    import json as _json
+
+    try:
+        params = urllib.parse.urlencode({"query": query, "display": k, "sort": "date"})
+        url = f"https://openapi.naver.com/v1/search/news.json?{params}"
+        req = urllib.request.Request(url, headers={
+            "X-Naver-Client-Id": os.getenv("NAVER_CLIENT_ID", ""),
+            "X-Naver-Client-Secret": os.getenv("NAVER_CLIENT_SECRET", ""),
+        })
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = _json.loads(resp.read().decode("utf-8"))
+        items = []
+        for it in data.get("items", []):
+            items.append({
+                "title": _strip_html(it.get("title", "")),
+                "description": _strip_html(it.get("description", "")),
+                "link": it.get("originallink") or it.get("link", ""),
+                "pubDate": it.get("pubDate", ""),
+                "source": "네이버 뉴스",
+            })
+        return items
+    except Exception:
+        return []
+
+
+def _search_google_news_rss(query: str, k: int = 5) -> list[dict]:
+    """Google News RSS — 키 불필요 fallback."""
+    import urllib.request
+    import urllib.parse
+    import xml.etree.ElementTree as ET
+    from email.utils import parsedate_to_datetime
+
+    try:
+        q = urllib.parse.quote(query)
+        url = f"https://news.google.com/rss/search?q={q}&hl=ko&gl=KR&ceid=KR:ko"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            xml_data = resp.read()
+        root = ET.fromstring(xml_data)
+        items = []
+        for item in root.iter("item"):
+            title = (item.findtext("title") or "").strip()
+            link = (item.findtext("link") or "").strip()
+            desc = _strip_html(item.findtext("description") or "").strip()
+            pub = (item.findtext("pubDate") or "").strip()
+            items.append({
+                "title": title,
+                "description": desc[:200],
+                "link": link,
+                "pubDate": pub,
+                "source": "Google 뉴스",
+            })
+            if len(items) >= k:
+                break
+        return items
+    except Exception:
+        return []
+
+
+def tool_news_search(query: str, k: int = 4) -> list[dict]:
+    """뉴스 검색 툴 — 네이버 우선, 실패 시 Google News RSS."""
+    if _has_naver_keys():
+        results = _search_naver_news(query, k=k)
+        if results:
+            return results
+    return _search_google_news_rss(query, k=k)
+
+
+def _detect_news_intent(query: str) -> bool:
+    """쿼리에 '최근/이슈/뉴스/사건/사기 사례' 등 뉴스 의도 감지."""
+    triggers = [
+        "최근", "요즘", "근래", "뉴스", "이슈", "사건", "사례",
+        "터졌", "발생", "일어났", "발표", "보도", "기사",
+        "왜 위험", "왜 안전", "무슨 일",
+    ]
+    return any(t in query for t in triggers)
+
+
+# ═════════════════════════════════════════════
 # 4. LLM Generation (OpenAI + fallback)
 # ═════════════════════════════════════════════
+
+LLM_MODEL = "gpt-5-mini"  # 변경: gpt-4o-mini → gpt-5-mini
 
 SYSTEM_PROMPT = """너는 '천안 청년 자취방 안전지도' 서비스의 AI 상담 어시스턴트다.
 청년 세입자에게 전세 계약 위험, 동네 안전성, 정책·제도를 안내한다.
@@ -409,6 +513,8 @@ SYSTEM_PROMPT = """너는 '천안 청년 자취방 안전지도' 서비스의 AI
 원칙:
 - 반드시 제공된 [Context]와 [Tool Result]에 근거해 답하고, 없는 사실은 지어내지 않는다.
 - 숫자·점수·신호등은 Tool Result의 값을 그대로 사용한다.
+- [뉴스 검색 결과]가 있으면 "최근" 이슈를 이 뉴스만 근거로 요약하고, 각 뉴스 뒤에 [1][2] 형태 각주를 붙인다.
+- 뉴스가 없는데 "최근" 질문이면 "현재 확인 가능한 최근 뉴스가 없다"고 명시하고, 일반적 위험 신호로 대체 안내한다.
 - 위험도가 노랑/빨강이면 계약 주의를 명확히 경고한다.
 - 답변은 한국어로, 마크다운 사용 가능. 3~7문장 내로 간결히.
 - 마지막에 "**내 매물 체크** / **안전지도** / **계약 가이드**" 탭 중 관련 탭을 안내.
@@ -434,12 +540,21 @@ def diagnose() -> dict:
         try:
             from openai import OpenAI
             client = OpenAI()
-            resp = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": "ping"}],
-                max_tokens=5,
-            )
+            is_gpt5 = LLM_MODEL.startswith(("gpt-5", "o1", "o3"))
+            if is_gpt5:
+                resp = client.chat.completions.create(
+                    model=LLM_MODEL,
+                    messages=[{"role": "user", "content": "ping"}],
+                    max_completion_tokens=200,
+                )
+            else:
+                resp = client.chat.completions.create(
+                    model=LLM_MODEL,
+                    messages=[{"role": "user", "content": "ping"}],
+                    max_tokens=5,
+                )
             info["openai_reachable"] = bool(resp.choices)
+            info["model"] = LLM_MODEL
         except Exception as e:
             info["error"] = f"{type(e).__name__}: {str(e)[:200]}"
     return info
@@ -463,14 +578,24 @@ def _call_openai(query: str, context: str, history: list[dict]) -> str | None:
         user_content = f"[Context 및 Tool Result]\n{context}\n\n[User Question]\n{query}"
         messages.append({"role": "user", "content": user_content})
 
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            temperature=0.3,
-            max_tokens=600,
-        )
-        return resp.choices[0].message.content.strip()
-    except Exception as e:
+        # gpt-5 계열(reasoning 모델)은 temperature 미지원 + reasoning 토큰 예약 필요
+        is_gpt5 = LLM_MODEL.startswith("gpt-5") or LLM_MODEL.startswith("o1") or LLM_MODEL.startswith("o3")
+        if is_gpt5:
+            resp = client.chat.completions.create(
+                model=LLM_MODEL,
+                messages=messages,
+                max_completion_tokens=3000,  # reasoning 토큰(~수백) + 응답(~수백) 여유
+            )
+        else:
+            resp = client.chat.completions.create(
+                model=LLM_MODEL,
+                messages=messages,
+                temperature=0.3,
+                max_tokens=700,
+            )
+        content = (resp.choices[0].message.content or "").strip()
+        return content or None
+    except Exception:
         return None
 
 
@@ -528,6 +653,15 @@ def _build_context(query: str, retrieved: list[dict], tool_results: dict) -> str
             t = d["추세"]
             parts.append(f"- 최근 전세가율: {t['최근_전세가율']:.0%}, 6개월 추세: {t['6개월_추세']:+.1%} ({t['추세_판정']})")
 
+    if tool_results.get("news"):
+        parts.append("## 뉴스 검색 결과 (실시간)")
+        for i, n in enumerate(tool_results["news"], 1):
+            title = n.get("title", "").strip()
+            desc = (n.get("description") or "").strip()
+            pub = (n.get("pubDate") or "").strip()
+            src = n.get("source", "")
+            parts.append(f"[{i}] {title} ({src}, {pub})\n{desc}")
+
     return "\n\n".join(parts) if parts else "관련 문서를 찾지 못했습니다."
 
 
@@ -556,6 +690,17 @@ def _fallback_compose(query: str, retrieved: list[dict], tool_results: dict) -> 
         if d.get("전세가율_평균") is not None:
             out.append(f"- 평균 전세가율 {d['전세가율_평균']:.0%}")
         out.append(f"- 강점: {d['최강축']} / 약점: {d['최약축']}")
+
+    if tool_results.get("news"):
+        out.append("\n**📰 최근 관련 뉴스**")
+        for i, n in enumerate(tool_results["news"][:4], 1):
+            title = n.get("title", "")
+            link = n.get("link", "")
+            src = n.get("source", "")
+            if link:
+                out.append(f"{i}. [{title}]({link}) — {src}")
+            else:
+                out.append(f"{i}. {title} — {src}")
 
     if retrieved and not tool_results:
         out.append("**관련 정보:**")
@@ -629,6 +774,27 @@ def answer(
                 "values": list(dong_info["축별점수"].values()),
             }
 
+    # 3-1) News 검색 — "최근/뉴스/이슈/왜 위험" 의도일 때만
+    if _detect_news_intent(query):
+        # 짧고 정확한 검색어 조립 (긴 자연어를 그대로 넘기면 매칭률 하락)
+        if params.dong:
+            news_query = f"천안 {params.dong} 전세사기"
+        else:
+            base = "천안" if "천안" not in query else ""
+            # 도메인 키워드 힌트
+            hint = "전세사기" if any(k in query for k in ["위험", "사기", "이슈", "사건", "사례"]) else "부동산"
+            news_query = f"{base} {hint}".strip()
+
+        news_items = tool_news_search(news_query, k=4)
+        # 첫 검색이 비면 더 넓은 쿼리로 재시도
+        if not news_items and params.dong:
+            news_items = tool_news_search(f"천안 {params.dong}", k=4)
+        if not news_items:
+            news_items = tool_news_search("천안 전세사기", k=4)
+        if news_items:
+            tool_results["news"] = news_items
+            tool_used.append("news")
+
     # 4) LLM 생성
     context = _build_context(query, retrieved, tool_results)
     llm_source = "fallback"
@@ -647,6 +813,7 @@ def answer(
         "radar_data": radar_data,
         "tool_used": tool_used,
         "retrieved": retrieved,
+        "news": tool_results.get("news", []),
         "llm": llm_source,
     }
 
