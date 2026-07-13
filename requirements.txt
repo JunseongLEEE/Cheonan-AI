@@ -15,6 +15,16 @@ shap>=0.45
 scikit-learn>=1.4
 scipy>=1.11
 
+# === 다중모델 앙상블 (exp_006) ===
+xgboost>=2.0
+catboost>=1.2
+joblib>=1.3
+
 # === RAG 챗봇 ===
 openai>=1.30
 python-dotenv>=1.0
+
+# === 천안세이프 LLM 학습/서빙 (exp_007, GPU 서버 전용) ===
+# torch>=2.5 (CUDA), transformers>=4.51, peft>=0.19,
+# bitsandbytes>=0.49, datasets>=3.0, vllm>=0.7.3
+# Streamlit Cloud 배포에는 불필요 — 로컬 vLLM 서버에서만 사용

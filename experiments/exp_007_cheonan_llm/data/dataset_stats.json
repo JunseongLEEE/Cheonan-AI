@@ -1,0 +1,15 @@
+{
+  "total": 6850,
+  "by_intent": {
+    "multi_tool": 450,
+    "simulator": 2200,
+    "recommend": 700,
+    "kb_qa": 900,
+    "news": 700,
+    "dong_lookup": 1300,
+    "clarify": 350,
+    "out_of_scope": 250
+  },
+  "train": 6302,
+  "eval": 548
+}

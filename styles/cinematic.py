@@ -11,25 +11,25 @@ import streamlit as st
 
 # ── Palette (from vercel benchmark CSS analysis) ──────────────────
 COLOR = {
-    "bg":            "#0A0908",
-    "bg_deep":       "#040308",
-    "bg_nebula":     "#0D0A17",
-    "surface":       "#141019",
-    "surface_hi":    "#1B1526",
-    "line":          "#2A2233",
-    "fg":            "#F3F4F6",
-    "fg_muted":      "#9CA3AF",
-    "fg_subtle":     "#6B7280",
-    "primary":       "#A78BFA",   # 보라 — main accent
-    "primary_soft":  "#C4A7FF",
-    "primary_glow":  "rgba(167,139,250,0.35)",
+    "bg":            "#FFFFFF",
+    "bg_deep":       "#F2F7FD",
+    "bg_nebula":     "#E9F2FC",
+    "surface":       "#FFFFFF",
+    "surface_hi":    "#F2F7FD",
+    "line":          "#DCE6F2",
+    "fg":            "#16233A",
+    "fg_muted":      "#55677F",
+    "fg_subtle":     "#8494A9",
+    "primary":       "#2E86E6",   # 천안 하늘 블루 (라이트 메인)   # 천안 블루 — 시 심벌 청색(#0047A0)의 다크 대비 상향
+    "primary_soft":  "#1E64B8",   # 라이트에선 진한 블루가 보조 텍스트
+    "primary_glow":  "rgba(46,134,230,0.22)",
     "caution":       "#F59E0B",
-    "caution_soft":  "#FCD34D",
+    "caution_soft":  "#B45309",
     "risk":          "#EF4444",
-    "risk_strong":   "#F87171",
+    "risk_strong":   "#D6394B",   # 태극 적색 계열 (라이트 텍스트용)
     "safe":          "#10B981",
-    "safe_soft":     "#34D399",
-    "highlight":     "#FFE9A8",
+    "safe_soft":     "#0B815A",
+    "highlight":     "#D97706",
     "cyan":          "#06B6D4",
 }
 
@@ -49,10 +49,9 @@ def _theme_css() -> str:
     /* ── Cosmic background ─────────────────────── */
     .stApp {{
         background:
-            radial-gradient(ellipse 900px 700px at 15% 12%, rgba(124,58,237,0.16), transparent 60%),
-            radial-gradient(ellipse 800px 600px at 88% 85%, rgba(110,143,230,0.14), transparent 60%),
-            radial-gradient(ellipse 700px 500px at 50% 55%, rgba(245,158,11,0.08), transparent 60%),
-            radial-gradient(ellipse at 50% 30%, {C['bg_nebula']} 0%, {C['bg_deep']} 90%);
+            radial-gradient(ellipse 900px 500px at 50% -5%, rgba(46,134,230,0.10), transparent 60%),
+            radial-gradient(ellipse 700px 400px at 90% 20%, rgba(46,134,230,0.05), transparent 60%),
+            linear-gradient(180deg, {C['bg_nebula']} 0%, #FFFFFF 320px);
         background-attachment: fixed;
         color: {C['fg']};
     }}
@@ -64,16 +63,16 @@ def _theme_css() -> str:
         background-image:
             radial-gradient(1.2px 1.2px at 20% 12%, rgba(255,255,255,0.9), transparent),
             radial-gradient(1px 1px at 62% 24%, rgba(255,255,255,0.7), transparent),
-            radial-gradient(1.5px 1.5px at 85% 8%, rgba(196,167,255,0.95), transparent),
+            radial-gradient(1.5px 1.5px at 85% 8%, rgba(110,168,232,0.95), transparent),
             radial-gradient(1px 1px at 12% 55%, rgba(255,255,255,0.65), transparent),
             radial-gradient(1.2px 1.2px at 45% 78%, rgba(255,255,255,0.8), transparent),
             radial-gradient(1px 1px at 78% 62%, rgba(255,233,168,0.75), transparent),
             radial-gradient(1.3px 1.3px at 32% 88%, rgba(255,255,255,0.7), transparent),
-            radial-gradient(1px 1px at 92% 42%, rgba(196,167,255,0.85), transparent),
+            radial-gradient(1px 1px at 92% 42%, rgba(110,168,232,0.85), transparent),
             radial-gradient(1.4px 1.4px at 8% 32%, rgba(255,255,255,0.6), transparent),
             radial-gradient(1px 1px at 55% 5%, rgba(255,255,255,0.7), transparent);
-        animation: star-twinkle 4.5s ease-in-out infinite;
-        opacity: 0.75;
+        animation: none;
+        opacity: 0;
     }}
 
     @keyframes star-twinkle {{
@@ -117,8 +116,8 @@ def _theme_css() -> str:
         100% {{ opacity: 1; transform: translateY(0);    filter: blur(0);    }}
     }}
     @keyframes glow-pulse {{
-        0%, 100% {{ text-shadow: 0 0 24px rgba(196,167,255,0.35), 0 0 48px rgba(167,139,250,0.15); }}
-        50%      {{ text-shadow: 0 0 36px rgba(196,167,255,0.6),  0 0 72px rgba(167,139,250,0.35); }}
+        0%, 100% {{ text-shadow: 0 0 20px rgba(110,168,232,0.18); }}
+        50%      {{ text-shadow: 0 0 26px rgba(110,168,232,0.30); }}
     }}
     @keyframes nebula-drift {{
         0%, 100% {{ transform: translate(0, 0) scale(1); opacity: 0.7; }}
@@ -149,7 +148,7 @@ def _theme_css() -> str:
     h1, h2, h3, h4, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {{
         color: {C['fg']} !important;
         letter-spacing: -0.02em;
-        text-shadow: 0 0 32px rgba(196,167,255,0.15);
+        text-shadow: none;
         animation: detail-slide-up 0.7s cubic-bezier(.16,1,.3,1) both;
     }}
     h1 {{ font-weight: 800; }}
@@ -158,25 +157,25 @@ def _theme_css() -> str:
 
     /* Metric cards */
     div[data-testid="stMetric"] {{
-        background: linear-gradient(140deg, rgba(27,21,38,0.7), rgba(20,16,25,0.5));
-        border: 1px solid rgba(167,139,250,0.18);
+        background: #FFFFFF;
+        border: 1px solid rgba(46,134,230,0.18);
         border-radius: 14px;
         padding: 1.0rem 1.1rem;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+        box-shadow: 0 4px 18px rgba(23,64,133,0.08);
         backdrop-filter: blur(6px);
         animation: score-slide-up 0.85s cubic-bezier(.16,1,.3,1) both;
         transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
     }}
     div[data-testid="stMetric"]:hover {{
         transform: translateY(-3px);
-        border-color: rgba(196,167,255,0.42);
-        box-shadow: 0 12px 40px rgba(124,58,237,0.25), inset 0 1px 0 rgba(255,255,255,0.06);
+        border-color: rgba(110,168,232,0.42);
+        box-shadow: 0 10px 28px rgba(46,134,230,0.16);
     }}
     div[data-testid="stMetricValue"] {{
         color: {C['fg']} !important;
         font-weight: 800;
         font-size: 1.85rem;
-        text-shadow: 0 0 24px rgba(196,167,255,0.25);
+        text-shadow: none;
     }}
     div[data-testid="stMetricLabel"] {{
         color: {C['fg_muted']} !important;
@@ -193,7 +192,7 @@ def _theme_css() -> str:
         padding-bottom: 6px;
     }}
     button[role="tab"] {{
-        background: rgba(27,21,38,0.5) !important;
+        background: #EFF5FC !important;
         border: 1px solid transparent !important;
         border-radius: 999px !important;
         color: {C['fg_muted']} !important;
@@ -203,19 +202,19 @@ def _theme_css() -> str:
         transition: all 0.28s cubic-bezier(.16,1,.3,1);
     }}
     button[role="tab"]:hover {{
-        background: rgba(167,139,250,0.10) !important;
+        background: rgba(46,134,230,0.10) !important;
         color: {C['primary_soft']} !important;
     }}
     button[role="tab"][aria-selected="true"] {{
-        background: linear-gradient(135deg, rgba(167,139,250,0.22), rgba(124,58,237,0.14)) !important;
-        border-color: rgba(196,167,255,0.4) !important;
+        background: linear-gradient(135deg, rgba(46,134,230,0.16), rgba(46,134,230,0.08)) !important;
+        border-color: rgba(110,168,232,0.4) !important;
         color: {C['fg']} !important;
-        box-shadow: 0 0 24px rgba(167,139,250,0.28), inset 0 1px 0 rgba(255,255,255,0.06);
+        box-shadow: 0 0 24px rgba(46,134,230,0.28), inset 0 1px 0 rgba(255,255,255,0.06);
     }}
 
     /* Expander */
     div[data-testid="stExpander"] {{
-        background: rgba(20,16,25,0.55);
+        background: #FFFFFF;
         border: 1px solid {C['line']};
         border-radius: 12px;
         backdrop-filter: blur(6px);
@@ -224,25 +223,25 @@ def _theme_css() -> str:
 
     /* Buttons */
     button[kind="primary"], .stButton > button, .stDownloadButton > button {{
-        background: linear-gradient(135deg, {C['primary']}, #7C3AED) !important;
+        background: linear-gradient(135deg, {C['primary']}, #1B66C9) !important;
         color: white !important;
         border: none !important;
         border-radius: 10px !important;
         font-weight: 700 !important;
         letter-spacing: 0.02em;
         padding: 0.55rem 1.4rem !important;
-        box-shadow: 0 6px 24px rgba(167,139,250,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+        box-shadow: 0 6px 24px rgba(46,134,230,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
         transition: all 0.28s cubic-bezier(.16,1,.3,1);
     }}
     button[kind="primary"]:hover, .stButton > button:hover, .stDownloadButton > button:hover {{
         transform: translateY(-2px);
-        box-shadow: 0 10px 34px rgba(167,139,250,0.55), inset 0 1px 0 rgba(255,255,255,0.2);
+        box-shadow: 0 10px 34px rgba(46,134,230,0.55), inset 0 1px 0 rgba(255,255,255,0.2);
     }}
 
     /* Inputs */
     input, textarea, .stTextInput input, .stNumberInput input, .stTextArea textarea,
     div[data-baseweb="select"] > div, div[data-baseweb="input"] input {{
-        background: rgba(20,16,25,0.75) !important;
+        background: #FFFFFF !important;
         border: 1px solid {C['line']} !important;
         color: {C['fg']} !important;
         border-radius: 10px !important;
@@ -250,19 +249,19 @@ def _theme_css() -> str:
     input:focus, textarea:focus,
     .stTextInput input:focus, .stNumberInput input:focus {{
         border-color: {C['primary']} !important;
-        box-shadow: 0 0 0 3px rgba(167,139,250,0.18) !important;
+        box-shadow: 0 0 0 3px rgba(46,134,230,0.18) !important;
     }}
     label, .stCheckbox label, .stRadio label {{ color: {C['fg']} !important; }}
 
     /* Slider */
     div[data-baseweb="slider"] div[role="slider"] {{
         background: {C['primary']} !important;
-        box-shadow: 0 0 16px rgba(167,139,250,0.6);
+        box-shadow: 0 0 16px rgba(46,134,230,0.6);
     }}
 
     /* Alert / info boxes */
     div[data-testid="stAlert"] {{
-        background: rgba(167,139,250,0.08) !important;
+        background: rgba(46,134,230,0.08) !important;
         border-left: 3px solid {C['primary']} !important;
         border-radius: 10px !important;
         color: {C['fg']} !important;
@@ -272,12 +271,12 @@ def _theme_css() -> str:
     div[data-testid="stProgress"] > div > div > div {{
         background: linear-gradient(90deg, {C['primary']}, {C['caution_soft']}) !important;
         animation: score-sweep 0.9s cubic-bezier(.65,0,.35,1) 0.1s both;
-        box-shadow: 0 0 12px rgba(167,139,250,0.5);
+        box-shadow: 0 0 12px rgba(46,134,230,0.5);
     }}
 
     /* DataFrame */
     div[data-testid="stDataFrame"] {{
-        background: rgba(20,16,25,0.6);
+        background: #FFFFFF;
         border-radius: 12px;
         border: 1px solid {C['line']};
     }}
@@ -286,22 +285,22 @@ def _theme_css() -> str:
     hr {{
         border: none;
         height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(167,139,250,0.35), transparent);
+        background: linear-gradient(90deg, transparent, rgba(46,134,230,0.35), transparent);
         margin: 2rem 0;
     }}
 
     /* ── Custom cinematic components ──────────── */
     .hero-cosmic {{
         position: relative;
-        padding: 3.5rem 3rem 3.2rem;
+        padding: 1.7rem 2.2rem 1.5rem;
         border-radius: 24px;
-        border: 1px solid rgba(196,167,255,0.15);
+        border: 1px solid #CFE0F5;
         background:
-            radial-gradient(ellipse 700px 400px at 20% 30%, rgba(167,139,250,0.18), transparent 60%),
-            radial-gradient(ellipse 600px 400px at 85% 75%, rgba(245,158,11,0.10), transparent 60%),
-            linear-gradient(140deg, rgba(27,21,38,0.85), rgba(10,9,8,0.9));
+            radial-gradient(ellipse 700px 400px at 18% 25%, rgba(46,134,230,0.14), transparent 60%),
+            radial-gradient(ellipse 600px 380px at 88% 80%, rgba(255,196,87,0.12), transparent 60%),
+            linear-gradient(150deg, #F4F9FF, #FFFFFF);
         overflow: hidden;
-        box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+        box-shadow: 0 16px 44px rgba(23,64,133,0.10);
         animation: chapter-in 1.1s cubic-bezier(.16,1,.3,1) both;
         margin-bottom: 1.6rem;
     }}
@@ -316,18 +315,18 @@ def _theme_css() -> str:
         animation: letter-in 0.9s cubic-bezier(.22,1,.36,1) 0.3s both;
     }}
     .hero-cosmic .hero-title {{
-        font-size: 3.0rem;
-        line-height: 1.15;
+        font-size: 2.05rem;
+        line-height: 1.18;
         font-weight: 800;
         letter-spacing: -0.03em;
         color: {C['fg']};
         margin: 0 0 0.9rem 0;
-        text-shadow: 0 0 40px rgba(196,167,255,0.25);
+        text-shadow: 0 0 40px rgba(110,168,232,0.25);
         animation: letter-in 1.1s cubic-bezier(.22,1,.36,1) 0.5s both, glow-pulse 5s ease-in-out 1.6s infinite;
     }}
     .hero-cosmic .hero-title em {{
         font-style: normal;
-        background: linear-gradient(135deg, {C['primary_soft']}, {C['highlight']});
+        background: linear-gradient(135deg, #0F4C9E, {C['primary']});
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -348,8 +347,8 @@ def _theme_css() -> str:
         display: inline-flex; align-items: center; gap: 6px;
         padding: 6px 14px;
         border-radius: 999px;
-        background: rgba(167,139,250,0.12);
-        border: 1px solid rgba(196,167,255,0.28);
+        background: rgba(46,134,230,0.12);
+        border: 1px solid rgba(110,168,232,0.28);
         color: {C['fg']};
         font-size: 12.5px;
         font-weight: 600;
@@ -358,7 +357,7 @@ def _theme_css() -> str:
         transition: all 0.28s cubic-bezier(.16,1,.3,1);
     }}
     .hero-cosmic .pill:hover {{
-        background: rgba(167,139,250,0.22);
+        background: rgba(46,134,230,0.22);
         transform: translateY(-1px);
     }}
     .hero-cosmic .pill.risk    {{ background: rgba(239,68,68,0.14); border-color: rgba(248,113,113,0.4); color: {C['risk_strong']}; }}
@@ -394,12 +393,12 @@ def _theme_css() -> str:
     .chapter-tag .rule {{
         flex: 1;
         height: 1px;
-        background: linear-gradient(90deg, rgba(196,167,255,0.35), transparent);
+        background: linear-gradient(90deg, rgba(110,168,232,0.35), transparent);
     }}
 
     /* Score bar (used in matching cards) */
     .score-bar-wrap {{
-        background: rgba(255,255,255,0.06);
+        background: #E4EDF8;
         border-radius: 999px;
         overflow: hidden;
         height: 8px;
@@ -410,7 +409,7 @@ def _theme_css() -> str:
         border-radius: 999px;
         background: linear-gradient(90deg, {C['primary']}, {C['caution_soft']});
         animation: bar-draw 0.9s cubic-bezier(.16,1,.3,1) 0.25s both;
-        box-shadow: 0 0 12px rgba(167,139,250,0.5);
+        box-shadow: 0 0 12px rgba(46,134,230,0.5);
     }}
 
     /* Grade pill (신호등) */
@@ -447,7 +446,10 @@ def hero(title_html: str,
          subtitle: str,
          eyebrow: str = "CHEONAN YOUTH · HOUSING SAFETY",
          pills: list[tuple[str, str]] | None = None,
-         hint: str = "매물 체크 → 안전지도 → 예산별 추천 → 계약 가이드 → AI 상담") -> None:
+         hint: str = "매물 체크 → 안전지도 → 예산별 추천 → 계약 가이드 → AI 상담",
+         mascot_uri: str | None = None,
+         cert_line: str | None = None,
+         symbol_uri: str | None = None) -> None:
     """Cinematic hero banner.
     - title_html can contain <em>…</em> for gradient accent
     - pills is list of (variant, text) where variant ∈ {'', 'risk', 'caution', 'safe'}
@@ -456,15 +458,27 @@ def hero(title_html: str,
     pills_html = "".join(
         f'<span class="pill {v}">{t}</span>' for v, t in pills
     )
-    st.markdown(f"""
-    <div class="hero-cosmic">
-        <div class="hero-eyebrow">{eyebrow}</div>
-        <div class="hero-title">{title_html}</div>
-        <div class="hero-sub">{subtitle}</div>
-        <div class="hero-pills">{pills_html}</div>
-        <div class="hero-hint">↓ {hint}</div>
-    </div>
-    """, unsafe_allow_html=True)
+    mascot_html = ""
+    if mascot_uri:
+        mascot_html = (
+            f'<img src="{mascot_uri}" alt="천안시 마스코트 나랑이" '
+            f'style="position:absolute;right:28px;bottom:10px;height:170px;'
+            f'filter:drop-shadow(0 0 24px rgba(46,134,230,0.40));pointer-events:none;"/>')
+    cert_html = ""
+    if cert_line:
+        cert_html = (f'<div style="margin-top:10px;font-size:0.72rem;color:#6B7280;'
+                     f'letter-spacing:0.02em;">{cert_line}</div>')
+    _html = (
+        f'<div class="hero-cosmic" style="position:relative;">'
+        f'{mascot_html}'
+        f'<div class="hero-eyebrow">{eyebrow}</div>'
+        f'<div class="hero-title">{title_html}</div>'
+        f'<div class="hero-sub">{subtitle}</div>'
+        f'<div class="hero-pills">{pills_html}</div>'
+        f'<div class="hero-hint">↓ {hint}</div>'
+        f'{cert_html}'
+        f'</div>')
+    st.markdown(_html, unsafe_allow_html=True)
 
 
 def chapter_divider(num: str, title: str) -> None:

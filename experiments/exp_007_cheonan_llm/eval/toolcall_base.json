@@ -1,0 +1,18 @@
+{
+  "model": "base",
+  "n_eval": 300,
+  "decision_acc": 0.7967,
+  "name_acc": 0.8859,
+  "args_valid_rate": 1.0,
+  "args_f1": 0.7364,
+  "per_intent_decision_acc": {
+    "clarify": 1.0,
+    "dong_lookup": 0.6508,
+    "kb_qa": 0.8462,
+    "multi_tool": 0.9091,
+    "news": 0.7778,
+    "out_of_scope": 1.0,
+    "recommend": 0.5588,
+    "simulator": 0.8925
+  }
+}

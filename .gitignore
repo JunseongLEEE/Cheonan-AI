@@ -44,3 +44,15 @@ venv/
 .idea/
 .vscode/
 .DS_Store
+
+# ─── exp_007 LLM 학습 산출물 (HuggingFace에 배포됨, GitHub 100MB 초과) ───
+experiments/exp_007_cheonan_llm/checkpoints/
+experiments/exp_007_cheonan_llm/data/*.pkl
+experiments/exp_007_cheonan_llm/data/*.jsonl
+experiments/exp_007_cheonan_llm/*.log
+experiments/*/models/*.joblib
+
+# ─── 캡처 원본(대량) — 발표용 크롭본만 figures/에 커밋 ───
+presentation/screenshots/
+catboost_info/
+narang_mascort.png

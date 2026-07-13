@@ -1,0 +1,70 @@
+{
+  "experiment_id": "exp_006_multimodel_ensemble",
+  "model_type": "gangton_classifier_ensemble",
+  "hypothesis": "이종 모델 앙상블이 단일 LightGBM 대비 강건성·성능을 높이는지 검증",
+  "base_experiment": "exp_004_threshold_80",
+  "n_samples": 60412,
+  "n_positive": 46084,
+  "n_negative": 14328,
+  "n_folds": 5,
+  "seed": 42,
+  "results": {
+    "LightGBM": {
+      "auc": 0.9893711588786159,
+      "f1": 0.9685515240753357,
+      "train_time_s": 8.1
+    },
+    "XGBoost": {
+      "auc": 0.9897705642612857,
+      "f1": 0.9743268493417002,
+      "train_time_s": 6.8
+    },
+    "CatBoost": {
+      "auc": 0.9873603933372754,
+      "f1": 0.9674811038846898,
+      "train_time_s": 26.0
+    },
+    "RandomForest": {
+      "auc": 0.9880951604239212,
+      "f1": 0.9719159649275111,
+      "train_time_s": 6.0
+    },
+    "HistGB": {
+      "auc": 0.9887977962498602,
+      "f1": 0.9729875509719735,
+      "train_time_s": 19.4
+    },
+    "LogisticReg": {
+      "auc": 0.9138134800791756,
+      "f1": 0.8948667608124089,
+      "train_time_s": 5.5
+    },
+    "Ensemble(Voting)": {
+      "auc": 0.9894571254487292,
+      "f1": 0.9726588009926422,
+      "members": [
+        "LightGBM",
+        "XGBoost",
+        "CatBoost",
+        "HistGB"
+      ]
+    },
+    "Ensemble(Stacking)": {
+      "auc": 0.9893284004942109,
+      "f1": 0.9738341239413434,
+      "members": [
+        "LightGBM",
+        "XGBoost",
+        "CatBoost",
+        "RandomForest",
+        "HistGB",
+        "LogisticReg"
+      ]
+    }
+  },
+  "best_single_model": "XGBoost",
+  "best_overall": "XGBoost",
+  "metric": "AUC",
+  "cv_score": 0.9897705642612857,
+  "f1_score": 0.9743268493417002
+}

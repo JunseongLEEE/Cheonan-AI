@@ -1,10 +1,10 @@
 {
-  "last_updated": "2026-06-15T20:50:00",
-  "current_phase": "visualization_polish",
-  "best_cv": 0.9894,
-  "best_experiment": "exp_004_threshold_80",
+  "last_updated": "2026-07-09T00:15:00",
+  "current_phase": "llm_deployed",
+  "best_cv": 0.9898,
+  "best_experiment": "exp_006_multimodel_ensemble",
   "stall_counter": 0,
-  "total_cycles": 10,
+  "total_cycles": 11,
   "max_cycles": 20,
   "strategy_history": [
     "Phase 1 data_collection: 실거래가/건축물대장/SGIS 수집 완료",
@@ -12,35 +12,29 @@
     "Phase 3 model_dev: exp_001~005 완료. exp_004(80%임계) AUC=0.9893 채택",
     "Phase 4-1 visualization: Streamlit 6탭 앱 구축",
     "Phase 4-2 analysis: 시계열 19개 위험경보동, Isolation Forest 5,134건 이상",
-    "Cycle 6: App UX 5.4→7+ (히어로배너/65동좌표/데모프리셋/SHAP한글/모델캐싱)",
-    "Cycle 7: Tab6 AI상담 Mock 챗봇, tooltip/expander/색상강화/인사이트",
-    "Cycle 8: 시뮬레이터 비교모드, Tab1 상세패널, Tab3 랭킹테이블, 챗봇 시뮬레이터 연동, Tab5 이상거래 미니맵",
-    "Cycle 9: Tab4 위험경보 지도, Tab3 레이더 2개동 비교, 거래통계, 챗봇 빠른질문 확장"
+    "Cycle 6-9: App UX 고도화 (히어로/시뮬레이터/비교모드/위험경보 지도)",
+    "Cycle 10: 오프라인 figure 10종 + 발표자료",
+    "Cycle 11 (2026-07-08): exp_006 6모델 앙상블(XGBoost 0.9898)+추천시스템, exp_007 천안세이프 LLM(Qwen2.5-7B QLoRA tool-calling) 데이터셋 6,850건 생성, GPT API→로컬 LLM 대체 통합, LLM figure 4종"
   ],
-  "next_action": "continue_polish_and_performance",
-  "completed_experiments": ["exp_001_baseline_lgbm", "exp_002_no_trade_price", "exp_003_building_features", "exp_004_threshold_80", "exp_005_expanded_data"],
-  "last_reasoning": "모델 수렴 확인. 앱 UX 집중 고도화 중. 6탭 모두 기능 풍부. 비교모드, 챗봇 시뮬레이터 연동, 위험경보 지도, 레이더 비교 등 발표 데모 킬러 피처 완성.",
+  "next_action": "발표자료에 신규 figure 6종 반영, 시연 시나리오에 LLM 챗봇 데모 추가",
+  "completed_experiments": ["exp_001_baseline_lgbm", "exp_002_no_trade_price", "exp_003_building_features", "exp_004_threshold_80", "exp_005_expanded_data", "exp_006_multimodel_ensemble", "exp_007_cheonan_llm"],
+  "running_experiments": [],
+  "last_reasoning": "exp_007 완료: 학습 3h52m(eval_loss 0.0052), 툴콜 평가 base 대비 +20~26pp, vLLM 서빙+챗봇 통합 e2e 통과. GPT API 대체 완료. GPU 경합은 VRAM 선예약+워처로 해결.",
   "competition": "2026 천안시 AI·데이터 기반 정책 아이디어 경진대회",
   "project": "천안 청년 자취방 안전지도",
   "deadline": "2026-08-31",
   "key_stats": {
-    "models": 5,
+    "models": 7,
+    "ensemble_auc": 0.9898,
+    "llm": "cheonan-safeguard-7b (Qwen2.5-7B QLoRA)",
+    "llm_dataset": 6850,
+    "llm_tools": ["simulator", "dong_lookup", "news_search", "recommend"],
     "safety_axes": "5/8",
     "danger_alert_dongs": 19,
     "anomaly_detected": 5134,
     "gangton_candidates": 1129,
     "streamlit_tabs": 6,
     "total_trades_analyzed": 102671,
-    "total_rent_records": 371612,
-    "total_trade_records": 270307,
-    "app_lines": 1065,
-    "app_features": [
-      "안전지도 (tooltip+상세패널+구비교)",
-      "시뮬레이터 (단일+비교+프리셋+SHAP한글+대체추천)",
-      "대시보드 (레이더비교+랭킹테이블+scatter+histogram)",
-      "추세분석 (경보카드+지도+시계열)",
-      "이상탐지 (미니맵+분포+상세테이블)",
-      "AI상담 (Mock챗봇+시뮬레이터연동+빠른질문)"
-    ]
+    "figures": 14
   }
 }

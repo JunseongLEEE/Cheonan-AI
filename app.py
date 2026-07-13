@@ -31,38 +31,24 @@ st.set_page_config(
 # ─── 다크 시네마틱 테마 주입 ───
 inject_theme()
 
-# ─── 히어로 (Ch. 00) ───
-hero(
-    title_html='<em>계약 전 밤,</em><br/>이 자취방은 안전한가',
-    subtitle="천안 청년 19.7만 명 · 86%가 세입자. 그런데 계약 전 '이 매물이 안전한지' 알려주는 통합 서비스는 없었다. 우리는 공공 API 10만+ 건의 전세 실거래와 65개 동의 8축 안전점수로 그 답을 만들었다.",
-    eyebrow="CHEONAN YOUTH · HOUSING SAFETY MAP",
-    pills=[
-        ("", "청년 19.7만 명"),
-        ("risk", "전세사기 288세대"),
-        ("caution", "위험 전세가율 80%+ 19개 동"),
-        ("safe", "AUC 0.9893 / F1 0.9690"),
-        ("", "실거래 102,671건 · 65개 동"),
-    ],
-    hint="매물 체크 → 안전지도 → 예산별 추천 → 계약 가이드 → AI 상담",
-)
+# ─── 공식 포털형 상단 헤더 (좌: 천안시 심벌 + 워드마크) ───
+from scripts.brand_assets import mascot_uri as _mascot_uri, symbol_uri as _symbol_uri
 
-# ─── 왜 필요한가 — 천안시 전세사기 현황 ───
-with st.expander("Ch. 00 · 왜 지금 이 서비스가 필요한가 — 천안시 청년 주거 위기 현황", expanded=False):
-    why_cols = st.columns(4)
-    why_cols[0].metric("청년 무주택 비율", "86.1%", help="천안시 18~39세 중 주택 미소유 비율")
-    why_cols[1].metric("전세사기 피해", "288세대", "145억원 피해", delta_color="inverse")
-    why_cols[2].metric("위험 전세가율 80%+", "19개 동", help="전세가율 80% 이상이면서 상승 추세인 동")
-    why_cols[3].metric("이상 거래 탐지", "5,134건", "전체의 5.0%", delta_color="inverse")
-    st.markdown("""
-**천안시 청년 19.7만명 중 86%가 무주택** — 대부분 전세·월세로 거주합니다.
-그러나 전세사기 피해는 계속 증가하고 있으며, 특히 **구도심(동남구)**의 노후 건물에 집중됩니다.
+_sym = _symbol_uri()
+st.markdown(f"""
+<div style="display:flex;align-items:center;justify-content:space-between;
+            padding:10px 4px 12px 4px;border-bottom:2px solid #2E86E6;margin-bottom:6px;">
+  <div style="display:flex;align-items:center;gap:12px;">
+    {f'<img src="{_sym}" alt="천안시" style="height:34px;"/>' if _sym else ''}
+    <div>
+      <span style="font-size:1.28rem;font-weight:800;color:#16233A;letter-spacing:-0.02em;">천안세이프</span>
+      <span style="font-size:0.85rem;color:#55677F;margin-left:10px;">천안 청년 자취방 안전지도</span>
+    </div>
+  </div>
+  <div style="font-size:0.8rem;color:#2E86E6;font-weight:600;">하늘 아래 가장 편안한 자취방</div>
+</div>
+""", unsafe_allow_html=True)
 
-이 서비스는 **계약 전에 AI가 위험을 미리 진단**하여 피해를 예방합니다:
-- 🔍 **내 매물 체크**: 보증금·면적·동네를 넣으면 깡통전세 확률 진단
-- 🗺️ **안전지도**: 동네별 종합 안전점수 한눈에 비교
-- 💰 **예산별 추천**: 내 예산에서 가장 안전한 동네 추천
-- ✅ **계약 가이드**: 등기부등본·HUG보험 등 필수 체크리스트
-""")
 
 # ─── Plotly 시네마틱 다크 우주 템플릿 ───
 import plotly.io as pio
@@ -76,13 +62,13 @@ pio.templates["cosmos"] = go.layout.Template(
         title=dict(font=dict(color=_C["fg"], size=18, family="Pretendard Variable"), x=0.02),
         colorway=[_C["primary_soft"], _C["caution_soft"], _C["safe_soft"],
                   _C["risk_strong"], _C["cyan"], _C["highlight"], "#F472B6", "#93C5FD"],
-        xaxis=dict(gridcolor="rgba(196,167,255,0.08)", zerolinecolor="rgba(196,167,255,0.15)",
+        xaxis=dict(gridcolor="rgba(46,134,230,0.10)", zerolinecolor="rgba(46,134,230,0.18)",
                    linecolor=_C["line"], tickcolor=_C["line"],
                    tickfont=dict(color=_C["fg_muted"]), title=dict(font=dict(color=_C["fg_muted"]))),
-        yaxis=dict(gridcolor="rgba(196,167,255,0.08)", zerolinecolor="rgba(196,167,255,0.15)",
+        yaxis=dict(gridcolor="rgba(46,134,230,0.10)", zerolinecolor="rgba(46,134,230,0.18)",
                    linecolor=_C["line"], tickcolor=_C["line"],
                    tickfont=dict(color=_C["fg_muted"]), title=dict(font=dict(color=_C["fg_muted"]))),
-        legend=dict(bgcolor="rgba(20,16,25,0.6)", bordercolor=_C["line"], borderwidth=1,
+        legend=dict(bgcolor="rgba(255,255,255,0.85)", bordercolor=_C["line"], borderwidth=1,
                     font=dict(color=_C["fg"])),
         hoverlabel=dict(bgcolor=_C["surface_hi"], bordercolor=_C["primary"],
                         font=dict(color=_C["fg"], family="Pretendard Variable")),
@@ -113,52 +99,7 @@ def load_predict_fn():
     return predict
 
 # 천안시 동별 좌표 (folium 마커용) — 65개 법정동 전체
-DONG_COORDS = {
-    # ── 동남구 시가지 ──
-    "원성동": [36.8003, 127.1502], "봉명동": [36.8090, 127.1390],
-    "신방동": [36.7890, 127.1610], "신부동": [36.7980, 127.1350],
-    "청당동": [36.7800, 127.1380], "안서동": [36.7730, 127.1280],
-    "용곡동": [36.7850, 127.1250], "청수동": [36.7950, 127.1450],
-    "구성동": [36.8010, 127.1420], "문화동": [36.8050, 127.1500],
-    "대흥동": [36.8070, 127.1530], "사직동": [36.8090, 127.1560],
-    "삼룡동": [36.7960, 127.1380], "영성동": [36.8110, 127.1600],
-    "성황동": [36.8130, 127.1580], "와촌동": [36.8150, 127.1650],
-    "구룡동": [36.7900, 127.1420], "오룡동": [36.8000, 127.1480],
-    "다가동": [36.8100, 127.1550],
-    # ── 서북구 시가지 ──
-    "쌍용동": [36.8140, 127.1270], "두정동": [36.8330, 127.1350],
-    "불당동": [36.8300, 127.1100], "백석동": [36.8450, 127.1050],
-    "성성동": [36.8550, 127.0900], "부대동": [36.8600, 127.0850],
-    "성정동": [36.8200, 127.1480], "업성동": [36.8250, 127.1150],
-    "차암동": [36.8380, 127.1250], "유량동": [36.8200, 127.1200],
-    "신당동": [36.8180, 127.1300],
-    # ── 목천읍 ──
-    "목천읍 삼성리": [36.7300, 127.1800], "목천읍 신계리": [36.7400, 127.1700],
-    "목천읍 서리": [36.7250, 127.1750], "목천읍 운전리": [36.7350, 127.1850],
-    "목천읍 응원리": [36.7200, 127.1900],
-    # ── 성환읍 ──
-    "성환읍 송덕리": [36.9200, 127.0700], "성환읍 매주리": [36.9150, 127.0750],
-    "성환읍 성월리": [36.9250, 127.0650], "성환읍 수향리": [36.9180, 127.0680],
-    "성환읍 율금리": [36.9100, 127.0800],
-    # ── 직산읍 ──
-    "직산읍 군서리": [36.9000, 127.0600], "직산읍 삼은리": [36.8950, 127.0550],
-    "직산읍 군동리": [36.9050, 127.0650], "직산읍 모시리": [36.8900, 127.0500],
-    "직산읍 부송리": [36.9020, 127.0580], "직산읍 상덕리": [36.8980, 127.0700],
-    "직산읍 수헐리": [36.8920, 127.0620],
-    # ── 성거읍 ──
-    "성거읍 송남리": [36.8700, 127.1100], "성거읍 요방리": [36.8680, 127.1050],
-    "성거읍 문덕리": [36.8750, 127.1150], "성거읍 신월리": [36.8650, 127.1000],
-    "성거읍 오목리": [36.8720, 127.1200], "성거읍 저리": [36.8600, 127.1080],
-    "성거읍 천흥리": [36.8630, 127.1150],
-    # ── 입장면 ──
-    "입장면 기로리": [36.8800, 127.0400], "입장면 도림리": [36.8850, 127.0350],
-    "입장면 신덕리": [36.8780, 127.0450], "입장면 하장리": [36.8830, 127.0300],
-    # ── 기타 면 ──
-    "북면 상동리": [36.7500, 127.2200], "성남면 석곡리": [36.7200, 127.1500],
-    "병천면 병천리": [36.7100, 127.2200], "병천면 가전리": [36.7050, 127.2150],
-    "병천면 탑원리": [36.7150, 127.2100], "풍세면 보성리": [36.7600, 127.1300],
-    "북면 연춘리": [36.7550, 127.2100],
-}
+from scripts.dong_coords import DONG_COORDS
 
 # ── 공통 유틸 ──
 DONGNAM_DONGS = {"원성동", "봉명동", "신방동", "신부동", "청당동", "안서동",
@@ -169,26 +110,28 @@ def _auto_gu(dong_name):
     return "동남구" if dong_name in DONGNAM_DONGS or any(k in dong_name for k in ["목천","북면","병천","풍세","광덕","성남","수신","동면"]) else "서북구"
 
 FEAT_KR = {
-    "보증금_만원": "보증금", "보증금_log": "보증금(log)", "전용면적": "전용면적",
-    "㎡당_보증금": "㎡당 보증금", "건물연령": "건물 연령", "동남구": "동남구 여부",
-    "동_평균보증금": "동 평균보증금", "동_거래건수": "동 거래건수",
-    "보증금_동평균_비율": "보증금/동평균", "보증금_구평균_비율": "보증금/구평균",
-    "면적_구평균_비율": "면적/구평균", "연도별_동_위험도": "동 과거위험",
-    "거래연도": "거래연도", "동_평균건물연령": "동 평균건물연령",
-    "동_건물연령_std": "동 건물연령편차", "동_노후비율": "동 노후비율",
-    "동_심각노후비율": "동 심각노후율", "동_내진비율": "동 내진비율",
-    "동_건물수": "동 건물수", "동_평균세대수": "동 평균세대수",
-    "동_평균총면적": "동 평균총면적", "동_평균지상층": "동 평균지상층",
-    "동_철근콘크리트비율": "동 철근콘크리트", "동_벽돌비율": "동 벽돌비율",
-    "동_목구조비율": "동 목구조비율", "건물연령_동평균차": "건물연령-동평균",
-    "보증금_노후도_교차": "보증금×노후도",
+    "보증금_만원": "보증금이 큰 편", "보증금_log": "보증금 수준",
+    "전용면적": "전용면적", "㎡당_보증금": "㎡당 보증금 수준",
+    "건물연령": "건물이 오래됨", "동남구": "구도심(동남구) 입지",
+    "동_평균보증금": "동네 평균 보증금 수준", "동_거래건수": "동네 거래 활발도",
+    "보증금_동평균_비율": "동네 평균 대비 보증금", "보증금_구평균_비율": "구 평균 대비 보증금",
+    "면적_구평균_비율": "구 평균 대비 면적", "연도별_동_위험도": "동네의 과거 위험 이력",
+    "거래연도": "최근 시장 시점 효과", "동_평균건물연령": "동네 평균 건물연령",
+    "동_건물연령_std": "동네 건물연령 편차", "동_노후비율": "동네 노후건물 비율",
+    "동_심각노후비율": "동네 심각노후 비율", "동_내진비율": "동네 내진설계 비율",
+    "동_건물수": "동네 건물 수", "동_평균세대수": "동네 평균 세대수",
+    "동_평균총면적": "동네 평균 연면적", "동_평균지상층": "동네 평균 층수",
+    "동_철근콘크리트비율": "철근콘크리트 비율", "동_벽돌비율": "벽돌구조 비율",
+    "동_목구조비율": "목구조 비율", "건물연령_동평균차": "동네 대비 건물 연식",
+    "보증금_노후도_교차": "높은 보증금×노후 결합",
 }
 
 
 # ─── 탭 (시민 중심 순서) ───
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab_listing, tab3, tab4, tab5, tab6 = st.tabs([
     "🔍 내 매물 체크",
     "🗺️ 안전지도",
+    "🏠 매물 탐색",
     "💰 예산별 추천",
     "✅ 계약 가이드",
     "💬 AI 상담",
@@ -200,6 +143,43 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 # 탭 1: 내 매물 체크 (핵심 — 시민이 가장 먼저 쓰는 기능)
 # ═══════════════════════════════════════════
 with tab1:
+    # ─── 히어로 (Ch. 00) ───
+
+    hero(
+        title_html='<em>하늘 아래에서,</em><br/>계약 전 밤을 밝힙니다',
+        subtitle="'하늘 아래 가장 편안한 도시' 천안의 청년 19.7만 명 — 86%가 세입자입니다. 동네와 매물은 따로 진단해야 합니다: 실거래 10만+ 건과 65개 동 8축 안전점수로, 계약 전 그 답을 드립니다.",
+        eyebrow="천안시 공공데이터 기반 · CHEONAN YOUTH HOUSING SAFETY",
+        pills=[
+            ("", "청년 19.7만 명"),
+            ("risk", "전세사기 288세대"),
+            ("caution", "위험 경보 19개 동 · 80%+ 상승추세"),
+            ("safe", "AUC 0.9893 / F1 0.9690"),
+            ("", "실거래 102,671건 · 65개 동"),
+        ],
+        hint="매물 체크 → 안전지도 → 매물 탐색 → 예산별 추천 → 계약 가이드 → AI 상담",
+        mascot_uri=_mascot_uri("기본"),
+        symbol_uri=_symbol_uri(),
+        cert_line="천안시 공공데이터 · 국토부 실거래가 기반  |  본 서비스는 천안시청과 무관한 학술·시연 프로젝트입니다",
+    )
+
+    # ─── 왜 필요한가 — 천안시 전세사기 현황 ───
+    with st.expander("Ch. 00 · 왜 지금 이 서비스가 필요한가 — 천안시 청년 주거 위기 현황", expanded=False):
+        why_cols = st.columns(4)
+        why_cols[0].metric("청년 무주택 비율", "86.1%", help="천안시 18~39세 중 주택 미소유 비율")
+        why_cols[1].metric("전세사기 피해", "288세대", "145억원 피해", delta_color="inverse")
+        why_cols[2].metric("위험 경보 동", "19개", help="전세가율 80% 이상 + 6개월 상승 추세인 법정동 (시계열 경보 기준)")
+        why_cols[3].metric("이상 거래 탐지", "5,134건", "전체의 5.0%", delta_color="inverse")
+        st.markdown("""
+    **천안시 청년 19.7만명 중 86%가 무주택** — 대부분 전세·월세로 거주합니다.
+    그러나 전세사기 피해는 계속 증가하고 있으며, 특히 **구도심(동남구)**의 노후 건물에 집중됩니다.
+
+    이 서비스는 **계약 전에 AI가 위험을 미리 진단**하여 피해를 예방합니다:
+    - 🔍 **내 매물 체크**: 보증금·면적·동네를 넣으면 깡통전세 확률 진단
+    - 🗺️ **안전지도**: 동네별 종합 안전점수 한눈에 비교
+    - 💰 **예산별 추천**: 내 예산에서 가장 안전한 동네 추천
+    - ✅ **계약 가이드**: 등기부등본·HUG보험 등 필수 체크리스트
+    """)
+
     chapter_divider("01", "이 매물, 계약해도 될까")
     st.caption("보증금·면적·동네·건축년도를 입력하면 AI가 깡통전세 위험도를 진단합니다")
 
@@ -267,22 +247,25 @@ with tab1:
             x=shap_df["shap_value"], y=shap_df["feature_kr"],
             orientation="h", marker_color=colors,
             text=[f"{v:+.3f}" for v in shap_df["shap_value"]], textposition="outside",
-            textfont=dict(size=13),
+            textfont=dict(size=13), cliponaxis=False,
         ))
+        _absmax = float(shap_df["shap_value"].abs().max()) * 1.35 or 1.0
         fig_shap.update_layout(
             height=220 if compact else 280,
-            margin=dict(l=10, r=50, t=10, b=30),
+            margin=dict(l=20, r=70, t=10, b=30),
             xaxis_title="위험 기여도 (빨강=위험↑, 초록=안전↑)",
-            xaxis=dict(title_font=dict(size=11)),
+            xaxis=dict(title_font=dict(size=11), range=[-_absmax, _absmax]),
             yaxis=dict(autorange="reversed", tickfont=dict(size=13)),
         )
         st.plotly_chart(fig_shap, use_container_width=True)
+        st.caption("→ 빨간 막대(+)는 위험을 높인 요인, 초록 막대(−)는 낮춘 요인입니다")
 
     # ── 모드 선택 ──
     sim_mode = st.radio("분석 모드", ["단일 분석", "비교 분석"], horizontal=True, key="sim_mode",
                         help="비교 분석: 두 매물의 위험도를 나란히 비교합니다")
 
-    preset = st.selectbox("예시 시나리오 (빠른 체험)", list(DEMO_SCENARIOS.keys()), key="sim_preset")
+    preset = st.selectbox("예시 시나리오 (빠른 체험)", list(DEMO_SCENARIOS.keys()), index=3, key="sim_preset",
+                          help="첫 화면은 구도심 원성동 위험 사례가 자동 진단됩니다 — 직접 입력으로 바꿔 내 매물을 진단하세요")
     preset_data = DEMO_SCENARIOS[preset]
 
     if sim_mode == "단일 분석":
@@ -535,7 +518,8 @@ with tab1:
 # ═══════════════════════════════════════════
 with tab2:
     chapter_divider("02", "천안시 동네별 안전지도")
-    st.caption("31개 행정동을 한눈에 — 아래 시네마틱 뷰에서 마우스를 올리면 상세 점수가 나타납니다")
+    st.caption("행정동 31개 지도 (법정동 65개 안전점수 집계) — 마우스를 올리면 상세 점수가 나타납니다  ·  "
+               "ⓘ 신호등 '위험'은 8축 종합점수 기준(1개 동), '경보 19개 동'은 전세가율 추세 기준 — 서로 다른 렌즈입니다")
 
     df_safety = load_safety_scores()
 
@@ -704,7 +688,7 @@ with tab2:
         d_col2.metric("전세가율", f"{jrate_val:.0%}" if pd.notna(jrate_val) and jrate_val > 0 else "데이터 없음")
         trade_cnt = dr['전세거래수']
         d_col3.metric("거래수", f"{int(trade_cnt):,}" if pd.notna(trade_cnt) and trade_cnt > 0 else "데이터 없음")
-        d_col4.metric("금융안전", f"{dr['금융안전_점수']:.2f}")
+        d_col4.metric("금융안전", f"{dr['금융안전_점수']*100:.0f}/100")
 
         # 8축 레이더 차트 (비교 동네 선택 가능)
         axes = ["금융안전", "건물노후", "침수위험", "치안", "소방", "교통", "편의시설", "환경"]
@@ -734,8 +718,11 @@ with tab2:
 
         fig_radar.update_layout(
             polar=dict(
-                radialaxis=dict(visible=True, range=[0, 1], tickfont=dict(size=10)),
-                angularaxis=dict(tickfont=dict(size=12)),
+                bgcolor="rgba(46,134,230,0.05)",
+                radialaxis=dict(visible=True, range=[0, 1], tickfont=dict(size=10, color="#55677F"),
+                                gridcolor="rgba(46,134,230,0.18)"),
+                angularaxis=dict(tickfont=dict(size=12, color="#16233A"),
+                                 gridcolor="rgba(46,134,230,0.18)"),
             ),
             height=400,
             title=dict(
@@ -873,7 +860,11 @@ with tab3:
             # 안전점수 + 낮은 전세가율 종합 정렬
             recommend["전세가율_평균"] = recommend["전세가율_평균"].fillna(0.5)
             recommend["추천점수"] = recommend["종합안전점수"] * 0.6 + (1 - recommend["평균전세가율"].clip(0, 1.5)) * 40
-            recommend = recommend.sort_values("추천점수", ascending=False)
+            # 규정 일관성: 전세가율 80%+(위험선 초과) 동네는 추천에서 제외
+            _excluded = recommend[recommend["전세가율_평균"] >= 0.80]["법정동명"].tolist()
+            recommend = recommend[recommend["전세가율_평균"] < 0.80]
+            # 순위 기준을 헤더 문구("가장 안전한 동네")와 일치시킴: 안전점수 → 동률 시 낮은 전세가율
+            recommend = recommend.sort_values(["종합안전점수", "전세가율_평균"], ascending=[False, True])
 
             top_dongs = recommend.head(5)
 
@@ -886,50 +877,64 @@ with tab3:
                     f"(안전점수 {best['종합안전점수']:.1f}, 평균 전세금 {best['평균전세금']:,.0f}만원)입니다."
                 )
 
+                _ANCHORS = {"병천": "🎓 한기대 도보권", "안서동": "🎓 단국대·백석대 캠퍼스권",
+                            "부대동": "🎓 공주대 천안캠", "쌍용동": "🎓 나사렛대 인근",
+                            "성환": "🚇 1호선 성환역 · 남서울대", "두정동": "🚇 1호선 두정역",
+                            "성정동": "🚇 1호선 두정역 생활권", "불당동": "🚄 KTX 천안아산역",
+                            "백석동": "🚄 KTX 생활권 · 백석대", "신월": "🏭 성거 산단 인접",
+                            "직산": "🚇 1호선 직산역 · 산단 통근"}
                 for rank, (_, r) in enumerate(top_dongs.iterrows(), 1):
-                    signal_icon = {"빨강": "🔴", "노랑": "🟡", "초록": "🟢"}.get(r["신호등"], "⚪")
                     avg_deposit = r["평균전세금"]
                     score = r["종합안전점수"]
                     jrate = r["전세가율_평균"]
-                    border_c = "#27ae60" if r["신호등"] == "초록" else "#f39c12" if r["신호등"] == "노랑" else "#e74c3c"
-                    rank_emoji = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"][rank - 1]
+                    border_c = "#10B981" if r["신호등"] == "초록" else "#F59E0B" if r["신호등"] == "노랑" else "#EF4444"
+                    rank_label = ["1", "2", "3", "4", "5"][rank - 1]
+                    medal_bg = {1: "#FFD700", 2: "#C0C0C0", 3: "#CD7F32"}.get(rank, "#DCE6F2")
+                    medal_fg = "#16233A" if rank <= 3 else "#55677F"
+                    is_top = rank == 1
+                    fin_score = r.get("금융안전_점수", 0)
+                    fin_label = "양호" if fin_score >= 0.7 else "주의" if fin_score >= 0.4 else "위험"
+                    _anchor = next((v for k, v in _ANCHORS.items() if k in r["법정동명"]), None)
+                    st.markdown(f"""
+<div style="display:flex;align-items:center;gap:16px;background:{'#F0F7FF' if is_top else '#FFFFFF'};
+            border:{'2px solid #2E86E6' if is_top else '1px solid #DCE6F2'};border-left:5px solid {border_c};
+            border-radius:14px;padding:14px 18px;margin-bottom:10px;
+            box-shadow:0 3px 12px rgba(23,64,133,{'0.10' if is_top else '0.05'});">
+  <div style="min-width:44px;height:44px;border-radius:50%;background:{medal_bg};color:{medal_fg};
+              display:flex;align-items:center;justify-content:center;font-size:1.15rem;font-weight:800;
+              box-shadow:inset 0 -2px 4px rgba(0,0,0,0.12);">{rank_label}위</div>
+  <div style="flex:1;min-width:0;">
+    <div style="font-size:1.08rem;font-weight:800;color:#16233A;">
+      {r['법정동명']} {'<span style="font-size:0.72rem;background:#2E86E6;color:#fff;border-radius:999px;padding:2px 9px;margin-left:6px;vertical-align:middle;">최고 추천</span>' if is_top else ''}</div>
+    <div style="font-size:0.82rem;color:#55677F;margin-top:3px;">
+      거래 {int(r['거래수'])}건 · 평균 전세금 {avg_deposit:,.0f}만원 · 금융안전 {fin_label}{f' · <b style="color:#1E64B8;">{_anchor}</b>' if _anchor else ''}</div>
+  </div>
+  <div style="text-align:center;min-width:86px;border-left:1px solid #E8F0FA;padding-left:16px;">
+    <div style="font-size:0.72rem;color:#8494A9;">안전점수</div>
+    <div style="font-size:1.35rem;font-weight:800;color:{border_c};">{score:.1f}</div>
+  </div>
+  <div style="text-align:center;min-width:86px;border-left:1px solid #E8F0FA;padding-left:16px;">
+    <div style="font-size:0.72rem;color:#8494A9;">전세가율</div>
+    <div style="font-size:1.35rem;font-weight:800;color:#16233A;">{jrate:.0%}</div>
+  </div>
+</div>""", unsafe_allow_html=True)
 
-                    rec_cols = st.columns([0.5, 3, 1.5, 1.5])
-                    with rec_cols[0]:
-                        st.markdown(f"### {rank_emoji}")
-                    with rec_cols[1]:
-                        st.markdown(f"**{signal_icon} {r['법정동명']}**")
-                        fin_score = r.get("금융안전_점수", 0)
-                        fin_label = "양호" if fin_score >= 0.7 else "주의" if fin_score >= 0.4 else "위험"
-                        st.caption(f"해당 예산대 거래 {int(r['거래수'])}건 | 평균 전세금 {avg_deposit:,.0f}만원 | 금융안전 {fin_label}")
-                    with rec_cols[2]:
-                        st.metric("안전점수", f"{score:.1f}")
-                    with rec_cols[3]:
-                        st.metric("전세가율", f"{jrate:.0%}")
-
+                if _excluded:
+                    st.caption(f"ⓘ 이 예산대 후보 중 평균 전세가율 80% 이상(규정상 위험선 초과)인 {len(_excluded)}개 동을 추천에서 제외했습니다: {', '.join(_excluded[:4])}{' 외' if len(_excluded) > 4 else ''}")
                 st.markdown("---")
                 st.info(f"💡 보증금 {budget_val:,}만원 기준으로 {budget_range_low:,.0f}~{budget_range_high:,.0f}만원 범위의 거래가 있는 동네입니다.")
                 st.markdown("👉 관심 동네의 구체적인 매물 위험도는 **내 매물 체크** 탭에서 확인하세요.")
 
                 # 추천 동네 지도
                 with st.expander("추천 동네 지도", expanded=True):
-                    m_rec = folium.Map(location=[36.815, 127.114], zoom_start=12, tiles="CartoDB dark_matter")
-                    for _, r in top_dongs.iterrows():
-                        dong_name = r["법정동명"]
-                        if dong_name not in DONG_COORDS:
-                            continue
-                        lat, lon = DONG_COORDS[dong_name]
-                        color = "#27ae60" if r["신호등"] == "초록" else "#f39c12" if r["신호등"] == "노랑" else "#e74c3c"
-                        folium.Marker(
-                            location=[lat, lon],
-                            popup=folium.Popup(
-                                f"<b>{dong_name}</b><br>안전점수: {r['종합안전점수']:.1f}<br>전세가율: {r['전세가율_평균']:.0%}",
-                                max_width=200
-                            ),
-                            tooltip=f"{dong_name} | {r['종합안전점수']:.1f}점",
-                            icon=folium.Icon(color="green" if r["신호등"] == "초록" else "orange" if r["신호등"] == "노랑" else "red", icon="home", prefix="fa"),
-                        ).add_to(m_rec)
-                    st.components.v1.html(m_rec._repr_html_(), height=350)
+                    from styles.svg_map import render_reco_svg
+                    _sel = [
+                        {"법정동명": r["법정동명"], "rank": _ri + 1,
+                         "score": float(r["종합안전점수"]), "grade": str(r["신호등"])}
+                        for _ri, (_, r) in enumerate(top_dongs.iterrows())
+                    ]
+                    render_reco_svg(_sel)
+                    st.caption("오프라인 벡터 지도 — 외부 타일 서버 없이 렌더링됩니다 (시연 안전)")
             else:
                 st.warning("해당 조건에 맞는 동네가 없습니다. 예산을 조정해보세요.")
         else:
@@ -959,6 +964,14 @@ with tab3:
 with tab4:
     chapter_divider("04", "전세 계약 전 체크리스트")
     st.caption("계약 전 꼭 확인해야 할 사항을 하나씩 체크하세요 — 하나라도 빠지면 위험합니다")
+
+    _cta1, _cta2, _cta3 = st.columns(3)
+    with _cta1:
+        st.link_button("🏛 천안시 안심계약 도움서비스 신청", "https://www.cheonan.go.kr", use_container_width=True)
+    with _cta2:
+        st.link_button("💰 청년월세지원 자격 확인 (복지로)", "https://www.bokjiro.go.kr", use_container_width=True)
+    with _cta3:
+        st.link_button("🛡 HUG 전세보증금 반환보증", "https://www.khug.or.kr", use_container_width=True)
 
     # 체크리스트 상태 관리
     if "checklist" not in st.session_state:
@@ -1094,40 +1107,52 @@ with tab4:
 # ═══════════════════════════════════════════
 with tab5:
     chapter_divider("05", "AI 주거안전 상담")
-    st.caption("RAG(Retrieval-Augmented Generation) + LightGBM 위험도 진단 — 자연어로 물어보세요")
+    _nr = _mascot_uri("안내")
+    if _nr:
+        st.markdown(f'<div style="display:flex;align-items:center;gap:10px;">'
+                    f'<img src="{_nr}" style="height:44px;border-radius:50%;'
+                    f'border:2px solid #2E86E6;background:#fff;"/>'
+                    f'<span style="color:#55677F;">천안 마스코트 <b style="color:#16233A;">나랑이</b>가 '
+                    f'매물 데이터를 직접 찾아 근거와 함께 답해요 — 자연어로 물어보세요</span></div>',
+                    unsafe_allow_html=True)
+    else:
+        st.caption("매물 데이터를 직접 찾아 근거와 함께 답하는 AI — 자연어로 물어보세요")
 
     # ── 연결 상태 뱃지 (배포 진단용) ──
+    _local_ok = False
     try:
         from scripts import rag_chatbot as _rag
+        from scripts.llm import local_llm as _local
+        _local_ok = _local.is_available()
         _key_ok = bool(os.getenv("OPENAI_API_KEY")) or _rag._has_openai_key()
     except Exception:
         _key_ok = False
 
-    _status_col1, _status_col2 = st.columns([3, 1])
-    with _status_col2:
-        if _key_ok:
-            st.success("🟢 OpenAI 연결됨")
-        else:
-            st.error("🔴 OpenAI 미연결 (Secrets 확인 필요)")
-
-    # ── RAG 아키텍처 안내 (접힘) ──
+    # ── RAG 아키텍처 안내 + 엔진 상태 (접힘) ──
     with st.expander("🧠 챗봇 아키텍처 (RAG + Tool Use)", expanded=False):
+        if _local_ok:
+            st.success("🟢 천안세이프 LLM (자체모델)")
+        elif _key_ok:
+            st.success("🟢 천안세이프 AI 엔진 연결")
+        else:
+            st.error("🔴 AI 엔진 미연결 (규칙 기반 모드)")
+
         st.markdown("""
-        **파이프라인**: `Query → Intent Router → KB Retrieval + Tool Use(시뮬레이터/동조회/뉴스) → LLM(gpt-5-mini) → Response`
+        **파이프라인**: `Query → 천안세이프 LLM(자체 파인튜닝) → Tool Calling(시뮬레이터/동조회/뉴스/추천) → Response`
 
         | 컴포넌트 | 역할 |
         |---|---|
-        | **Knowledge Base** | 정책·개념·체크리스트 문서 14편 (전세가율/HUG/청년월세/등기부 등) |
-        | **Embedder** | OpenAI `text-embedding-3-small` (1536-d), 코사인 유사도 top-3 검색 |
+        | **천안세이프 LLM** | Qwen2.5-7B + 깡통전세 QLoRA 파인튜닝 (RTX 3090×2 자체 학습) — 툴 선택·호출·답변 전담 |
         | **Simulator Tool** | LightGBM 깡통전세 분류기 (AUC 0.989) + SHAP 설명 |
         | **Dong Lookup Tool** | 65개 동 8축 안전점수 · 전세가율 추세 조회 |
         | **News Tool** | Google News RSS 검색 (키 불필요, 한국어 매체 우선) |
-        | **LLM** | OpenAI gpt-5-mini — 검색·툴·뉴스 결과를 근거로 답변 생성 |
-        | **Fallback** | 임베딩/LLM 실패 시 rule-based 합성으로 무중단 동작 |
+        | **Recommend Tool** | exp_006 4-모델 앙상블 기반 예산별 안전 동네·매물 추천 |
+        | **Knowledge Base** | 정책·개념·체크리스트 문서 14편 — 파인튜닝 데이터에 내재화 |
+        | **Fallback** | 로컬 LLM 미기동 시 OpenAI → rule-based 순 자동 폴백 (무중단) |
         """)
 
         # 배포 진단 (연결 실패 시만 자세히 표시)
-        if st.button("🔧 OpenAI 연결 진단", key="diag_btn"):
+        if st.button("🔧 LLM 연결 진단", key="diag_btn"):
             with st.spinner("진단 중..."):
                 info = _rag.diagnose()
             st.json(info)
@@ -1374,9 +1399,16 @@ with tab5:
                 badges.append("🔧 LightGBM 시뮬레이터")
             if "dong_lookup" in result["tool_used"]:
                 badges.append("📊 동네 조회")
-            if "news" in result["tool_used"]:
+            if "news" in result["tool_used"] or "news_search" in result["tool_used"]:
                 badges.append("🔎 뉴스 검색")
-            llm_badge = "🤖 OpenAI gpt-5-mini" if result["llm"] == "openai" else "⚙️ Rule-based (OpenAI 미연결)"
+            if "recommend" in result["tool_used"]:
+                badges.append("🏠 안전매물 추천")
+            if result["llm"] == "local":
+                llm_badge = "🤖 천안세이프 LLM (자체 파인튜닝 7B)"
+            elif result["llm"] == "openai":
+                llm_badge = "🤖 천안세이프 AI (클라우드 백업 엔진)"
+            else:
+                llm_badge = "⚙️ Rule-based (LLM 미연결)"
             badges.append(llm_badge)
 
             text = result["text"]
@@ -1396,10 +1428,10 @@ with tab5:
                         text += f"{i}. {title} — *{src}* {pub}\n"
 
             # ⚠ Fallback 사용 시 상단에 눈에 띄는 경고
-            if result["llm"] != "openai":
+            if result["llm"] not in ("local", "openai"):
                 text = (
-                    "> ⚠️ **OpenAI가 응답하지 않아 rule-based 응답으로 대체되었습니다.** "
-                    "챗봇 상단 '🔧 OpenAI 연결 진단' 버튼으로 원인을 확인하세요.\n\n"
+                    "> ⚠️ **LLM이 응답하지 않아 rule-based 응답으로 대체되었습니다.** "
+                    "챗봇 상단 '🔧 LLM 연결 진단' 버튼으로 원인을 확인하세요.\n\n"
                 ) + text
 
             if result.get("radar_data"):
@@ -1425,11 +1457,18 @@ with tab5:
     # 채팅 히스토리
     if "chat_messages" not in st.session_state:
         st.session_state.chat_messages = [
-            {"role": "assistant", "content": "안녕하세요! 천안시 주거안전 AI 상담입니다.\n\n동네 안전성, 매물 위험도, 계약 주의사항을 물어보세요.\n\n예시: *\"두정동 안전한가요?\"*, *\"5000만원으로 어디가 좋아?\"*"}
+            {"role": "assistant", "content": "안녕하세요! 천안시 주거안전 AI 상담입니다.\n\n동네 안전성, 매물 위험도, 계약 주의사항을 물어보세요.\n\n예시: *\"두정동 안전한가요?\"*, *\"5000만원으로 어디가 좋아?\"* — 아래 빠른질문 버튼으로 바로 체험할 수 있어요."}
         ]
 
+    import re as _re
+    def _fix_bold(t):
+        # '**75.3%**이며'처럼 한글 인접 볼드가 리터럴 노출되는 것 방지 → 공백 삽입
+        t = _re.sub(r"(?<=\S)\*\*(?=\S)", lambda m: "**", t)
+        t = _re.sub(r"\*\*(\S[^*]*?\S)\*\*(?=[가-힣])", r"**\1** ", t)
+        return t
     def _render_chat_msg(content):
-        """채팅 메시지 렌더 — RADAR 마커 있으면 Plotly 차트도 표시."""
+        # 채팅 메시지 렌더 (RADAR 마커 있으면 Plotly 레이더도 표시)
+        content = _fix_bold(content)
         if "---RADAR---" in content:
             text_part = content.replace("---RADAR---", "").strip()
             st.markdown(text_part, unsafe_allow_html=True)
@@ -1443,7 +1482,12 @@ with tab5:
                     name=radar_data["dong"], line_color="#3498db",
                 ))
                 fig_r.update_layout(
-                    polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
+                    polar=dict(bgcolor="rgba(46,134,230,0.05)",
+                               radialaxis=dict(visible=True, range=[0, 1],
+                                               gridcolor="rgba(46,134,230,0.18)",
+                                               tickfont=dict(color="#55677F")),
+                               angularaxis=dict(gridcolor="rgba(46,134,230,0.18)",
+                                                tickfont=dict(color="#16233A"))),
                     height=280, margin=dict(t=30, b=20, l=40, r=40),
                     showlegend=False,
                 )
@@ -1474,7 +1518,7 @@ with tab5:
     quick_questions = [
         "안전한 동네 추천", "위험 지역 알려줘", "깡통전세가 뭐야?",
         "불당동 안전한가요?", "안서동 5000만원 33㎡ 분석해줘", "구도심 vs 신도심 격차",
-        "원성동 3000만원 20㎡ 1990년", "계약 전 뭐 확인해?", "주거 정책 알려줘",
+        "원성동 3000만원 20㎡ 1990년", "천안아산역 통근하면 어디 살까?", "계약 전 뭐 확인해?",
     ]
     for i, q in enumerate(quick_questions):
         with quick_cols[i % 3]:
@@ -1495,15 +1539,26 @@ with tab6:
     df_safety = load_safety_scores()
     df_rate = load_jeonse_rate()
 
-    # 상단 요약
-    col1, col2, col3, col4, col5 = st.columns(5)
-    col1.metric("분석 동 수", f"{len(df_safety)}")
-    col2.metric("평균 안전점수", f"{df_safety['종합안전점수'].mean():.1f}")
-    col3.metric("평균 전세가율", f"{df_safety['전세가율_평균'].mean():.0%}")
+    # 상단 요약 — 히어로 타일 1 + 보조 4 (시각 위계)
     n_danger = len(df_safety[df_safety['신호등']=='빨강'])
     n_caution = len(df_safety[df_safety['신호등']=='노랑'])
-    col4.metric("위험/주의 동", f"{n_danger} / {n_caution}", f"빨강 {n_danger} + 노랑 {n_caution}")
-    col5.metric("전세 거래 수", f"{int(df_safety['전세거래수'].sum()):,}")
+    n_safe = len(df_safety[df_safety['신호등']=='초록'])
+    _hero_col, _rest = st.columns([1.6, 3])
+    with _hero_col:
+        st.markdown(f"""
+<div style="border:1px solid rgba(239,68,68,0.45);border-radius:16px;padding:18px 20px;
+            background:linear-gradient(135deg,rgba(239,68,68,0.14),rgba(245,158,11,0.10));">
+  <div style="font-size:0.8rem;color:#C2414F;font-weight:700;letter-spacing:0.06em;">신호등 분포 · 65개 동</div>
+  <div style="font-size:2.3rem;font-weight:800;color:#16233A;line-height:1.1;margin-top:4px;">
+    🔴 {n_danger} <span style="color:#F59E0B;">🟡 {n_caution}</span> <span style="color:#10B981;">🟢 {n_safe}</span></div>
+  <div style="font-size:0.82rem;color:#55677F;margin-top:6px;">위험 1곳 = 원성동 (구도심) — 지역균형발전 과제의 지도적 근거</div>
+</div>""", unsafe_allow_html=True)
+    with _rest:
+        col2, col3, col5 = st.columns(3)
+        col2.metric("평균 안전점수", f"{df_safety['종합안전점수'].mean():.1f}")
+        col3.metric("평균 전세가율", f"{df_safety['전세가율_평균'].mean():.0%}")
+        col5.metric("전세 거래 수", f"{int(df_safety['전세거래수'].sum()):,}")
+        st.caption("ⓘ 거래 수는 안전점수 산출용 최근 전세 계약 기준 — 히어로의 102,671건은 매매 포함 전체 매칭 실거래")
 
     # 구도심 vs 신도심 격차 요약
     _dn = df_safety[df_safety["법정동명"].apply(lambda x: x in DONGNAM_DONGS or any(k in x for k in ["목천","병천","북면","풍세","성남"]))]
@@ -1518,19 +1573,27 @@ with tab6:
     st.subheader("동별 안전 랭킹")
     color_map = {"빨강": "#e74c3c", "노랑": "#f39c12", "초록": "#27ae60"}
 
-    df_plot = df_safety.sort_values("종합안전점수", ascending=True)
+    _top10 = df_safety.nlargest(10, "종합안전점수")
+    _bot10 = df_safety.nsmallest(10, "종합안전점수")
+    df_plot = pd.concat([_bot10, _top10]).sort_values("종합안전점수", ascending=True)
     fig1 = px.bar(
         df_plot, x="종합안전점수", y="법정동명",
         orientation="h", color="신호등", color_discrete_map=color_map,
-        title=f"천안시 전체 {len(df_plot)}개 동 안전점수 랭킹",
+        title="안전 Top 10 · 취약 Bottom 10 (전체 65개는 아래 펼침)",
     )
     fig1.update_layout(
-        height=max(500, len(df_plot) * 22),
-        showlegend=True,
-        yaxis=dict(dtick=1, tickfont=dict(size=11)),
+        height=560, showlegend=True,
+        yaxis=dict(dtick=1, tickfont=dict(size=13), title=None),
         xaxis=dict(title="종합안전점수", range=[0, 105]),
     )
     st.plotly_chart(fig1, use_container_width=True)
+    with st.expander(f"전체 {len(df_safety)}개 동 랭킹 보기"):
+        _all = df_safety.sort_values("종합안전점수", ascending=True)
+        _figall = px.bar(_all, x="종합안전점수", y="법정동명", orientation="h",
+                         color="신호등", color_discrete_map=color_map)
+        _figall.update_layout(height=max(500, len(_all) * 20), showlegend=False,
+                              yaxis=dict(dtick=1, tickfont=dict(size=11), title=None))
+        st.plotly_chart(_figall, use_container_width=True)
 
     ranking = df_safety[["법정동명", "종합안전점수", "신호등", "전세가율_평균", "전세거래수",
                           "금융안전_점수", "건물노후_점수"]].copy()
@@ -1538,7 +1601,9 @@ with tab6:
         lambda x: "동남구" if x in DONGNAM_DONGS or any(k in x for k in ["목천","병천","북면","풍세","성남"]) else "서북구"
     )
     ranking["전세거래수"] = ranking["전세거래수"].fillna(0).astype(int)
-    ranking["전세가율_평균"] = ranking["전세가율_평균"].fillna(0)
+    ranking["전세가율_평균"] = (ranking["전세가율_평균"].fillna(0) * 100).round(1)
+    ranking["금융안전_점수"] = (ranking["금융안전_점수"] * 100).round(0)
+    ranking["건물노후_점수"] = (ranking["건물노후_점수"] * 100).round(0)
     ranking = ranking.sort_values("종합안전점수", ascending=False).reset_index(drop=True)
     ranking.index = ranking.index + 1
     ranking.index.name = "순위"
@@ -1549,10 +1614,10 @@ with tab6:
         ranking, use_container_width=True, height=400,
         column_config={
             "종합안전점수": st.column_config.ProgressColumn("안전점수", min_value=0, max_value=100, format="%.1f"),
-            "전세가율_평균": st.column_config.NumberColumn("전세가율", format=".0%"),
+            "전세가율_평균": st.column_config.NumberColumn("전세가율", format="%.1f%%"),
             "전세거래수": st.column_config.NumberColumn("거래수", format="%d"),
-            "금융안전_점수": st.column_config.ProgressColumn("금융안전", min_value=0, max_value=1, format="%.2f"),
-            "건물노후_점수": st.column_config.ProgressColumn("건물안전", min_value=0, max_value=1, format="%.2f"),
+            "금융안전_점수": st.column_config.ProgressColumn("금융안전", min_value=0, max_value=100, format="%.0f"),
+            "건물노후_점수": st.column_config.ProgressColumn("건물안전", min_value=0, max_value=100, format="%.0f"),
         },
     )
 
@@ -1796,3 +1861,167 @@ st.markdown("""
     </span>
 </div>
 """, unsafe_allow_html=True)
+
+
+# ═══════════════════════════════════════════
+# 탭: 매물 탐색 — 직방 스타일 카드 + AI 신호등 + 외부 플랫폼 연결
+# ═══════════════════════════════════════════
+with tab_listing:
+    from scripts import listings as _lst
+
+    from scripts.brand_assets import mascot_uri as _lst_mascot
+    _lm = _lst_mascot("안내")
+    st.markdown(
+        f"""
+<div style="background:linear-gradient(95deg,#2E86E6,#4A9BF0);border-radius:14px;
+            padding:18px 22px;margin-bottom:14px;position:relative;">
+  {f'<img src="{_lm}" style="position:absolute;right:18px;bottom:0;height:76px;"/>' if _lm else ''}
+  <div style="color:#fff;font-size:1.25rem;font-weight:700;">🏠 매물 탐색 — 모든 카드에 AI 신호등</div>
+  <div style="color:rgba(255,255,255,0.88);font-size:0.86rem;margin-top:4px;">
+    국토부 실거래 102,671건 전수를 4-모델 앙상블이 사전 스코어링 · 실거래만 표시 = <b style="color:#BBF7D0;">허위매물 0%</b>
+    · 현재 매물 확인은 카드의 외부 링크에서 (민간 데이터 미수집)</div>
+</div>""",
+        unsafe_allow_html=True,
+    )
+
+    @st.cache_data(show_spinner="단지 프로필 집계 중...")
+    def _load_profiles():
+        return _lst.load_complex_profiles()
+
+    @st.cache_data(show_spinner=False)
+    def _diagnose_cached(dong, deposit, area, year, dongnam):
+        return _lst.diagnose(dong, deposit, area, year, dongnam)
+
+    @st.cache_data(show_spinner=False)
+    def _load_history(dong: str, complex_name: str):
+        base = pd.read_parquet("data/processed/recommend_base.parquet")
+        h = base[(base["법정동명"] == dong) & (base["단지명"] == complex_name)]
+        h = h.sort_values("거래일", ascending=False).head(10)
+        out = pd.DataFrame({
+            "거래일": h["거래일"].dt.strftime("%Y-%m-%d"),
+            "보증금(만원)": h["보증금_만원"].map("{:,.0f}".format),
+            "면적(㎡)": h["전용면적_㎡"].round(1),
+            "전세가율": h["전세가율"].map(lambda v: f"{v:.0%}" if pd.notna(v) else "—"),
+            "AI 위험확률": h["앙상블_위험확률"].map("{:.0%}".format),
+        })
+        return out.reset_index(drop=True)
+
+    prof = _load_profiles()
+
+    # ── 천안 특화: 대학가 원클릭 프리셋 (12개 대학 도시) ──
+    UNIV_PRESETS = {
+        "🎓 단국대·상명대·백석대": ("안서동",),
+        "🎓 공주대 천안캠": ("부대동",),
+        "🎓 한기대": ("병천면",),
+        "🎓 나사렛대": ("쌍용동",),
+        "🎓 남서울대": ("성환읍",),
+        "🚄 KTX 천안아산역": ("불당동", "백석동"),
+        "🚇 1호선 두정·성환": ("두정동", "성정동", "성환읍"),
+    }
+    if "lst_univ" not in st.session_state:
+        st.session_state["lst_univ"] = None
+    st.caption("🎯 대학가·통근 원클릭 필터 — 버튼을 누르면 해당 생활권 매물만 표시")
+    uc = st.columns(len(UNIV_PRESETS))
+    for _i, (_label, _prefix) in enumerate(UNIV_PRESETS.items()):
+        with uc[_i]:
+            _active = st.session_state["lst_univ"] == _prefix
+            if st.button(("✓ " if _active else "") + _label, key=f"univ_{_i}", use_container_width=True):
+                st.session_state["lst_univ"] = None if _active else _prefix
+                st.rerun()
+
+    # ── 필터 바 ──
+    f1, f2, f3, f4 = st.columns([1.5, 1.0, 1.6, 1.0])
+    with f1:
+        kw = st.text_input("단지·동네 검색", placeholder="예: 불당, 두정 코아루", key="lst_kw")
+    with f2:
+        dong_sel = st.selectbox("법정동", ["전체"] + sorted(prof["법정동명"].unique().tolist()), key="lst_dong")
+    with f3:
+        sig_sel = st.multiselect("신호등", ["초록", "노랑", "주황", "빨강"], default=["초록", "노랑", "주황", "빨강"], key="lst_sig")
+    with f4:
+        sort_sel = st.selectbox("정렬", ["AI 안전순", "AI 위험순", "최신 거래순", "보증금 낮은순"], key="lst_sort")
+
+    g1, g2, g3 = st.columns(3)
+    with g1:
+        dep_rng = st.slider("보증금 (만원)", 0, 40000, (0, 20000), step=500, key="lst_dep")
+    with g2:
+        area_rng = st.slider("전용면적 (㎡)", 0, 150, (0, 100), step=5, key="lst_area")
+    with g3:
+        year_min = st.slider("준공년도 이후", 1980, 2026, 1990, step=1, key="lst_year")
+        recent_only = st.checkbox("최근 3년 실거래만 (신뢰도↑)", value=True, key="lst_recent")
+
+    q = prof[
+        prof["신호등"].isin(sig_sel)
+        & prof["최근보증금"].between(*dep_rng)
+        & prof["최근면적"].between(*area_rng)
+        & (prof["건축년도"].fillna(2000) >= year_min)
+    ]
+    if st.session_state.get("lst_univ"):
+        _prefixes = st.session_state["lst_univ"]
+        if isinstance(_prefixes, str):
+            _prefixes = (_prefixes,)
+        q = q[q["법정동명"].str.startswith(tuple(_prefixes))]
+        st.info(f"📍 프리셋 필터 적용 중: {' · '.join(_prefixes)} — 같은 버튼을 다시 누르면 해제됩니다.")
+    if dong_sel != "전체":
+        q = q[q["법정동명"] == dong_sel]
+    if kw.strip():
+        terms = kw.split()
+        for t in terms:
+            q = q[q["단지명"].str.contains(t, na=False) | q["법정동명"].str.contains(t, na=False)]
+
+    sort_map = {
+        "AI 안전순": ("최근위험확률", True),
+        "AI 위험순": ("최근위험확률", False),
+        "최신 거래순": ("최근거래일", False),
+        "보증금 낮은순": ("최근보증금", True),
+    }
+    if recent_only:
+        _cutoff = q["최근거래일"].max() - pd.DateOffset(years=3)
+        q = q[q["최근거래일"] >= _cutoff]
+    col_s, asc = sort_map[sort_sel]
+    if sort_sel == "AI 안전순":
+        # 동률(0%대) 안에서는 최근·다거래 단지 우선 — 오래된 소표본이 1위로 오지 않게
+        q = q.sort_values(["최근위험확률", "최근거래일", "거래수"], ascending=[True, False, False])
+    else:
+        q = q.sort_values(col_s, ascending=asc)
+
+    n_g = int((q["신호등"] == "초록").sum()); n_y = int((q["신호등"] == "노랑").sum())
+    n_o = int((q["신호등"] == "주황").sum()); n_r = int((q["신호등"] == "빨강").sum())
+    st.markdown(
+        f"**{len(q):,}개 단지** · 🟢 안전 {n_g:,} 🟡 주의 {n_y:,} 🟠 위험 {n_o:,} 🔴 심각 {n_r:,} "
+        f"<span style='color:#94A3B8;font-size:0.85rem;'>— %는 절대 위험확률, 등급은 천안 전체 단지 내 상대 분위(심각=상위 10%)</span>",
+        unsafe_allow_html=True,
+    )
+
+    # ── 카드 그리드 + 상세 ──
+    if "lst_show" not in st.session_state:
+        st.session_state["lst_show"] = 12
+    show_n = st.session_state["lst_show"]
+    page = q.head(show_n)
+
+    if len(page) == 0:
+        st.info("조건에 맞는 단지가 없습니다. 필터를 넓혀보세요.")
+    cols = st.columns(3)
+    for i, (_, row) in enumerate(page.iterrows()):
+        with cols[i % 3]:
+            st.markdown(_lst.card_html(row), unsafe_allow_html=True)
+            with st.expander("📋 거래 이력 · AI 정밀 진단"):
+                hist = _load_history(row["법정동명"], row["단지명"])
+                st.dataframe(hist, use_container_width=True, height=180)
+                d = _diagnose_cached(row["법정동명"], float(row["최근보증금"]),
+                                     float(row["최근면적"]), int(row["건축년도"] or 2010),
+                                     int(row["동남구"]))
+                if d:
+                    icon = {"빨강": "🔴", "노랑": "🟡", "초록": "🟢"}[d["signal"]]
+                    st.markdown(f"{icon} **LightGBM 정밀 진단: {d['signal_label']} {d['risk_prob']:.1%}**"
+                                + (f" · 동네 안전점수 {d['safety_score']:.0f}/100" if d.get("safety_score") else ""))
+                    for s in d["shap"]:
+                        arrow = "🔺 위험↑" if s["value"] > 0 else "🔽 위험↓"
+                        st.caption(f"{arrow} {s['name']} ({s['value']:+.2f})")
+
+    if len(q) > show_n:
+        if st.button(f"더 보기 ({show_n:,} / {len(q):,})", use_container_width=True, key="lst_more"):
+            st.session_state["lst_show"] += 12
+            st.rerun()
+
+    st.caption("ⓘ 카드 정보는 국토부 실거래 공공데이터 기반 '단지 프로필'입니다. 현재 나와있는 매물·호가는 "
+               "외부 링크(네이버부동산·다방)에서 확인하세요 — 본 서비스는 민간 플랫폼 데이터를 수집·저장하지 않습니다.")

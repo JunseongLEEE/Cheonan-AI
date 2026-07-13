@@ -33,9 +33,12 @@ Architecture
         │
         ▼
   ┌─────────────────────────────────────────┐
-  │ 4. LLM Generation                        │
-  │    - OpenAI gpt-5-mini (context 주입)    │
-  │    - 없으면 rule-based composer fallback │
+  │ 4. LLM Generation (우선순위)              │
+  │    ① 천안세이프 로컬 LLM (자체 파인튜닝)    │
+  │       - cheonan-safeguard-7b (vLLM)      │
+  │       - 네이티브 tool-calling 에이전트     │
+  │    ② OpenAI gpt-5-mini (컨텍스트 주입)    │
+  │    ③ rule-based composer fallback        │
   └─────────────────────────────────────────┘
         │
         ▼
@@ -484,9 +487,17 @@ def _has_openai_key() -> bool:
 
 
 def diagnose() -> dict:
-    """배포 진단용 — Streamlit Cloud에서 OpenAI 연결 상태 확인."""
+    """배포 진단용 — 로컬 LLM / OpenAI 연결 상태 확인."""
     _load_from_streamlit_secrets()
+    local_ok = False
+    try:
+        from scripts.llm import local_llm
+        local_ok = local_llm.is_available()
+    except Exception:
+        pass
     info = {
+        "local_llm_available": local_ok,
+        "local_llm_model": os.getenv("LOCAL_LLM_MODEL", "cheonan-safeguard-7b"),
         "openai_key_present": bool(os.getenv("OPENAI_API_KEY")),
         "openai_key_prefix": (os.getenv("OPENAI_API_KEY") or "")[:10] + "..." if os.getenv("OPENAI_API_KEY") else None,
         "openai_reachable": False,
@@ -692,6 +703,26 @@ def answer(
     history = history or []
     dongnam_dongs = dongnam_dongs or set()
     dong_list = df_safety["법정동명"].dropna().unique().tolist()
+
+    # 0) 천안세이프 에이전트 — 로컬 파인튜닝 모델 우선, 없으면 GPT API가 동일 툴·가드로 대행
+    try:
+        from scripts.llm import local_llm
+        if local_llm.pick_backend() is not None:
+            local_out = local_llm.chat(
+                query, df_safety, df_trends,
+                history=history, dongnam_dongs=dongnam_dongs,
+            )
+            if local_out and local_out.get("text"):
+                return {
+                    "text": local_out["text"],
+                    "radar_data": local_out.get("radar_data"),
+                    "tool_used": local_out.get("tool_used", []),
+                    "retrieved": [],
+                    "news": local_out.get("news", []),
+                    "llm": local_out.get("llm", "local"),
+                }
+    except Exception:
+        pass  # 로컬 LLM 실패 시 기존 경로로 폴백
 
     # 1) Intent Routing — 파라미터 추출
     params = extract_property_params(query, dong_list)

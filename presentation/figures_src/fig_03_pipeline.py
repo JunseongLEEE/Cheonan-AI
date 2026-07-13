@@ -23,15 +23,15 @@ STAGES = [
          accent="#10B981",  # emerald — cleaning
          note="정제 완료"),
     dict(no="03", title="AI 모델링",
-         items=[("LightGBM",     "AUC 0.9893 / F1 0.9690"),
+         items=[("6모델 앙상블",  "XGBoost AUC 0.9898"),
                 ("SHAP",          "설명력 확보"),
-                ("Isolation F.",  "이상거래 5,134건"),],
+                ("천안세이프 LLM", "7B tool-calling 파인튜닝"),],
          accent="#8B5CF6",  # violet — modeling
          note="학습 완료"),
     dict(no="04", title="서비스",
          items=[("Streamlit 웹",   "인터랙티브 대시보드"),
                 ("신호등 지도",     "65개 동 시각화"),
-                ("RAG 챗봇",       "뉴스 근거 답변"),],
+                ("LLM 챗봇·추천",  "자체 LLM이 툴 호출"),],
          accent="#F59E0B",  # amber — delivery
          note="배포 완료"),
 ]

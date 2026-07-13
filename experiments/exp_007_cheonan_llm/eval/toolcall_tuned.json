@@ -1,0 +1,18 @@
+{
+  "model": "tuned",
+  "n_eval": 300,
+  "decision_acc": 1.0,
+  "name_acc": 1.0,
+  "args_valid_rate": 1.0,
+  "args_f1": 0.9986,
+  "per_intent_decision_acc": {
+    "clarify": 1.0,
+    "dong_lookup": 1.0,
+    "kb_qa": 1.0,
+    "multi_tool": 1.0,
+    "news": 1.0,
+    "out_of_scope": 1.0,
+    "recommend": 1.0,
+    "simulator": 1.0
+  }
+}

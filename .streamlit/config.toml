@@ -1,9 +1,9 @@
 [theme]
-base = "dark"
-primaryColor = "#A78BFA"
-backgroundColor = "#0A0908"
-secondaryBackgroundColor = "#141019"
-textColor = "#F3F4F6"
+base = "light"
+primaryColor = "#2E86E6"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F2F7FD"
+textColor = "#16233A"
 font = "sans serif"
 
 [server]
@@ -12,3 +12,6 @@ enableXsrfProtection = true
 
 [browser]
 gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"

@@ -1,0 +1,29 @@
+experiment_id: exp_007_cheonan_llm
+hypothesis: >
+  천안 깡통전세 도메인 tool-calling 데이터(실데이터 기반)로 Qwen2.5-7B를 QLoRA
+  파인튜닝하면, 외부 GPT API 없이 로컬 3090×2에서 시뮬레이터·동조회·뉴스·추천
+  툴을 정확히 선택/호출하고 근거 기반 한국어 상담이 가능한 전문 LLM을 만들 수 있다.
+base_model: Qwen/Qwen2.5-7B-Instruct
+seed: 42
+hardware: RTX 3090 24GB x 2 (DDP)
+dataset:
+  builder: scripts/llm/build_dataset.py
+  intents: [simulator, dong_lookup, news, recommend, kb_qa, multi_tool, clarify, out_of_scope]
+  tool_outputs: 실시스템 값 (exp_004 LightGBM+SHAP, exp_006 앙상블 추천, 65동 안전점수)
+  eval_ratio: 0.08 (intent 층화)
+training:
+  method: QLoRA (4-bit NF4, double quant, bf16 compute)
+  lora: {r: 16, alpha: 32, dropout: 0.05, targets: [q,k,v,o,gate,up,down]}
+  max_len: 2048
+  epochs: 2
+  effective_batch: 32  # 2 per-device x accum 8 x 2 GPU
+  lr: 1.0e-4 (cosine, warmup 3%)
+  loss_masking: assistant 턴만 학습 (프롬프트·툴결과 -100)
+serving:
+  merge: scripts/llm/merge_lora.py -> /opt/models/cheonan-safeguard-7b
+  server: vLLM 0.7.3, hermes tool parser, port 8008, GPU 0
+  integration: scripts/llm/local_llm.py (에이전트 루프) -> rag_chatbot.answer() 최우선
+evaluation:
+  script: scripts/llm/eval_toolcall.py
+  metrics: [decision_acc, name_acc, args_valid_rate, args_f1]
+  baseline: Qwen2.5-7B-Instruct zero-shot (동일 프롬프트)

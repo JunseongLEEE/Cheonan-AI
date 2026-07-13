@@ -1,0 +1,27 @@
+Sliding Window Attention is enabled but not implemented for `sdpa`; unexpected results may be encountered.
+Loading checkpoint shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading checkpoint shards:  25%|██▌       | 1/4 [00:02<00:06,  2.30s/it]Loading checkpoint shards:  50%|█████     | 2/4 [00:04<00:04,  2.30s/it]Loading checkpoint shards:  75%|███████▌  | 3/4 [00:07<00:02,  2.39s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:08<00:00,  2.05s/it]Loading checkpoint shards: 100%|██████████| 4/4 [00:08<00:00,  2.16s/it]
+/usr/local/lib/python3.10/dist-packages/transformers/generation/configuration_utils.py:631: UserWarning: `do_sample` is set to `False`. However, `temperature` is set to `0.7` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `temperature`.
+  warnings.warn(
+/usr/local/lib/python3.10/dist-packages/transformers/generation/configuration_utils.py:636: UserWarning: `do_sample` is set to `False`. However, `top_p` is set to `0.8` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_p`.
+  warnings.warn(
+/usr/local/lib/python3.10/dist-packages/transformers/generation/configuration_utils.py:653: UserWarning: `do_sample` is set to `False`. However, `top_k` is set to `20` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_k`.
+  warnings.warn(
+The attention mask is not set and cannot be inferred from input because pad token is same as eos token. As a consequence, you may observe unexpected behavior. Please pass your input's `attention_mask` to obtain reliable results.
+{
+  "model": "tuned",
+  "n_eval": 300,
+  "decision_acc": 1.0,
+  "name_acc": 1.0,
+  "args_valid_rate": 1.0,
+  "args_f1": 0.9986,
+  "per_intent_decision_acc": {
+    "clarify": 1.0,
+    "dong_lookup": 1.0,
+    "kb_qa": 1.0,
+    "multi_tool": 1.0,
+    "news": 1.0,
+    "out_of_scope": 1.0,
+    "recommend": 1.0,
+    "simulator": 1.0
+  }
+}

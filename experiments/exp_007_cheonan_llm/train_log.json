@@ -1,0 +1,38 @@
+{
+  "experiment_id": "exp_007_cheonan_llm",
+  "model_type": "domain_llm_toolcalling",
+  "hypothesis": "실데이터 기반 tool-calling QLoRA 파인튜닝으로 GPT API 없이 로컬 3090×2에서 깡통전세 전문 상담 LLM 구현",
+  "base_model": "Qwen/Qwen2.5-7B-Instruct",
+  "date": "2026-07-08",
+  "hardware": "RTX 3090 24GB x2 (DDP)",
+  "dataset": {
+    "total": 6850, "train": 6302, "eval": 548,
+    "intents": {"simulator": 2200, "dong_lookup": 1300, "kb_qa": 900,
+                "news": 700, "recommend": 700, "multi_tool": 450,
+                "clarify": 350, "out_of_scope": 250},
+    "token_len": {"mean": 1527, "p95": 2049, "max": 2089}
+  },
+  "training": {
+    "method": "QLoRA 4-bit NF4, LoRA r16/a32, assistant-only loss",
+    "epochs": 2, "steps": 394, "effective_batch": 32,
+    "lr": 1e-4, "max_len": 2600,
+    "train_runtime_sec": 13922, "final_train_loss": 0.0742,
+    "eval_loss_curve": [[0.25, 0.043], [0.51, 0.0074], [0.76, 0.0064],
+                        [1.02, 0.0059], [1.27, 0.0054], [1.52, 0.0053], [1.78, 0.0052]]
+  },
+  "evaluation": {
+    "metric": "tool-calling accuracy (held-out 300)",
+    "base":  {"decision_acc": 0.7967, "name_acc": 0.8859, "args_valid_rate": 1.0, "args_f1": 0.7364},
+    "tuned": {"decision_acc": 1.0, "name_acc": 1.0, "args_valid_rate": 1.0, "args_f1": 0.9986},
+    "improvement_pp": {"decision_acc": 20.3, "name_acc": 11.4, "args_f1": 26.2}
+  },
+  "cv_score": 1.0,
+  "metric": "decision_acc",
+  "seed": 42,
+  "serving": {
+    "merged_model": "/opt/models/cheonan-safeguard-7b",
+    "server": "vLLM 0.7.3, port 8008, hermes tool parser, GPU 0",
+    "integration": "rag_chatbot.answer() 우선순위: local → openai → rule-based",
+    "e2e_smoke": "simulator/dong_lookup/recommend/news_search/clarify/out_of_scope 전부 통과"
+  }
+}
